@@ -1,0 +1,12 @@
+# Data manipulation and visualization
+numpy
+pandas
+matplotlib
+scikit-learn
+
+# Jupyter Notebook support
+ipykernel
+
+# Deep Learning (Pick ONE of the options below, or keep both to experiment)
+torch
+torchvision
