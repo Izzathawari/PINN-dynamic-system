@@ -1,5 +1,5 @@
 import numpy as np
-
+ 
 class VDP:
     def __init__(self, omega, nu):
         """
