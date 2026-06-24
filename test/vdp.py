@@ -1,13 +1,12 @@
 import numpy as np
  
 class VDP:
-    def __init__(self, omega, nu):
+    def __init__(self,  nu):
         """
         Initialize the Van der Pol oscillator with its physical parameters.
         omega: Natural frequency of the system
         nu: Non-linear damping coefficient (often written as epsilon)
         """
-        self.omega = omega
         self.nu = nu
 
     def func(self, r, t):
@@ -22,7 +21,7 @@ class VDP:
         # dx/dt = v
         fx = v
         # dv/dt = -omega^2 * x + nu * (1 - x**2) * v
-        fv = -self.omega**2 * x + self.nu * (1 - x**2) * v
+        fv = -x + self.nu * (1 - x**2) * v
         
         return np.array([fx, fv], float)
 
@@ -43,4 +42,23 @@ class VDP:
         # Return the new updated state [x_new, v_new]
         return (k1 + 2*k2 + 2*k3 + k4) / 6.0
 
-    
+
+    def generate_trajectory(self, initial_condition, t_array):
+        """
+        Automatically extracts step size h, tracks state updates,
+        and records the entire history to return to the user.
+        """
+        # Automatically calculate the step size h from your time array
+        h = t_array[1] - t_array[0]
+        
+        # Initialize your state vector with the passed initial conditions
+        r = np.array(initial_condition, dtype=float)
+        
+        # Create a list to accumulate the history at every step
+        history = []
+        
+        for t in t_array:
+            history.append(r.copy())         # 1. Record the current state [x, v]
+            r += self.rk4_step(r, t, h)      # 2. Update r to the next time step
+            
+        return np.array(history)             # Convert to a NumPy array for easy slicing
