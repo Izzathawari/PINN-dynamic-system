@@ -1,13 +1,14 @@
 import numpy as np
+import matplotlib.pyplot as plt
  
 class VDP:
-    def __init__(self,  nu):
+    def __init__(self,  mu):
         """
         Initialize the Van der Pol oscillator with its physical parameters.
         omega: Natural frequency of the system
         nu: Non-linear damping coefficient (often written as epsilon)
         """
-        self.nu = nu
+        self.mu = mu
 
     def func(self, r, t):
         """
@@ -21,7 +22,7 @@ class VDP:
         # dx/dt = v
         fx = v
         # dv/dt = -omega^2 * x + nu * (1 - x**2) * v
-        fv = -x + self.nu * (1 - x**2) * v
+        fv = -x + self.mu * (1 - x**2) * v
         
         return np.array([fx, fv], float)
 
@@ -62,3 +63,29 @@ class VDP:
             r += self.rk4_step(r, t, h)      # 2. Update r to the next time step
             
         return np.array(history)             # Convert to a NumPy array for easy slicing
+    
+    def plot_trajectory (self, initial_condition, t_array):
+
+        trajectory_data = self.generate_trajectory(initial_condition, t_array)
+        x_data = trajectory_data [:,0]
+        v_data = trajectory_data [:,1]
+
+        fig, (ax1, ax2) = plt.subplots(1,2, figsize= (10,8)) 
+
+        ax1.plot(t_array, x_data, label="Position ($x$)", color="tab:blue", lw=2)
+        ax1.set_title(f"Time Series ($\mu$={self.mu})")
+        ax1.set_xlabel("Time ($t$)")
+        ax1.set_ylabel("Displacement ($x$)")
+        ax1.grid(True)
+        ax1.legend()
+
+        ax2.plot(x_data, v_data, label="State Path", color="tab:orange", lw=2)
+        ax2.scatter(initial_condition[0], initial_condition[1], color="red", zorder=5, label="Initial State")
+        ax2.set_title(f"Phase Space Portrait ($\mu$={self.mu})")
+        ax2.set_xlabel("Position ($x$)")
+        ax2.set_ylabel("Velocity ($v = \dot{x}$)")
+        ax2.grid(True)
+        ax2.legend()
+
+        plt.tight_layout()
+        plt.show()

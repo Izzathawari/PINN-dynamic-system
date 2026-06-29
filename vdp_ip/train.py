@@ -48,4 +48,6 @@ def train_model (model, timepoints, num_epochs, learning_rate,EPOCH_INTERVAL):
         #     model.K.data = torch.tensor(K_init, dtype=torch.float32)
 
         if (epoch + 1) % EPOCH_INTERVAL == 0:
-            print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss_value:.4f}, alpha: {model.alpha.item():.4f}, K: {model.K.item():.4f}")
+            print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss_value:.4f}, mu: {model.mu.item():.4f}")
+        
+        return loss_history, mu_history
