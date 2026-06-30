@@ -9,6 +9,7 @@ class PINNInverse(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(N_INPUT, N_HIDDEN), nn.Tanh(),
             nn.Linear(N_HIDDEN, N_HIDDEN), nn.Tanh(),
+            nn.Linear(N_HIDDEN, N_HIDDEN), nn.Tanh(),
             nn.Linear(N_HIDDEN, N_OUTPUT)
         )
         

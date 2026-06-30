@@ -21,17 +21,20 @@ from tqdm import tqdm
 #     )
 #     return result.x
 
-def train_model (model, timepoints, num_epochs, learning_rate,EPOCH_INTERVAL):
+def train_model (model, t_data,x_data, t_physics, num_epochs, epoch_interval, learning_rate):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     loss_history = []
     mu_history = []
+
+    LAMBDA_1 = 1.0
+    LAMBDA_2 = 0.7
 
     for epoch in tqdm(range (num_epochs), desc="Training VDP Inverse Problem..."):
 
         optimizer.zero_grad()
         loss_data, loss_physics = model.compute_loss(t_data, x_data, t_physics)
 
-        total_loss = loss_data + loss_physics
+        total_loss = LAMBDA_1 * loss_data + LAMBDA_2 * loss_physics
         total_loss.backward()
         optimizer.step()
 
@@ -47,7 +50,7 @@ def train_model (model, timepoints, num_epochs, learning_rate,EPOCH_INTERVAL):
         #     model.alpha.data = torch.tensor(alpha_init, dtype=torch.float32)
         #     model.K.data = torch.tensor(K_init, dtype=torch.float32)
 
-        if (epoch + 1) % EPOCH_INTERVAL == 0:
+        if (epoch + 1) % epoch_interval == 0:
             print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss_value:.4f}, mu: {model.mu.item():.4f}")
         
-        return loss_history, mu_history
+    return loss_history, mu_history
