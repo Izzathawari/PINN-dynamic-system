@@ -2,24 +2,7 @@ import torch
 import time
 import numpy as np
 from tqdm import tqdm
-
-# def initial_loss_function(params, timepoints, population):
-#     y0 = [population[0]]
-#     t = np.linspace(timepoints[0], timepoints[-1], num=len(timepoints))
-#     solution = odseint(sim, y0, t, args=(params,), atol=1e-4, rtol=1e-4)  # Relax tolerances
-#     residuals = population - solution[:, 0]
-#     return np.mean(residuals**2)
-
-# def optimize_parameters(timepoints, population):
-#     params0 = np.array([1.0, 10.0])  # Initial guesses for alpha and K
-#     result = minimize(
-#         initial_loss_function,
-#         params0,
-#         args=(timepoints, population),
-#         method='L-BFGS-B',
-#         options={'disp': True, 'gtol': 1e-4}
-#     )
-#     return result.x
+import matplotlib.pyplot as plt
 
 def train_model (model, t_data,x_data, t_physics, num_epochs, epoch_interval, learning_rate):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -54,3 +37,60 @@ def train_model (model, t_data,x_data, t_physics, num_epochs, epoch_interval, le
             print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss_value:.4f}, mu: {model.mu.item():.4f}")
         
     return loss_history, mu_history
+
+def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_data, mu_history,INITIAL_MU):
+
+    t_test = t_test.clone().detach().requires_grad_(True)
+
+    x_pred_tensor = model(t_test)
+    
+    # Calculate predicted velocity: v = dx/dt
+    v_pred_tensor = torch.autograd.grad(
+        x_pred_tensor, t_test, 
+        grad_outputs=torch.ones_like(x_pred_tensor), 
+        create_graph=False
+    )[0]
+    
+    x_pred = x_pred_tensor.cpu().numpy().flatten()
+    v_pred = v_pred_tensor.cpu().numpy().flatten()
+    t_test = t_test.cpu().numpy().flatten()
+    t_train_data = t_train_data.cpu().numpy().flatten()
+    x_train_data = x_train_data.cpu().numpy().flatten()
+    
+    #3. Plotting the Results
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 5))
+    
+    # Left Plot: Trajectory Tracking
+    ax1.plot(t_true, x_true, 'b-', alpha=0.5, label='True Trajectory (RK4)', lw=2)
+    ax1.plot(t_test, x_pred, 'r--', label='PINN Prediction', lw=2)
+    ax1.scatter(t_train_data, x_train_data, color='black', zorder=5, label='Sparse Training Data')
+    ax1.set_title(f"Trajectory Reconstruction (Discovered $\mu$={model.mu.item():.2f})")
+    ax1.set_xlabel("Time ($t$)")
+    ax1.set_ylabel("Position ($x$)")
+    ax1.legend()
+    ax1.grid(True)
+    
+    # Right Plot: Parameter Convergence
+    ax2.plot(mu_history, color='tab:orange', lw=2, label="Estimated $\mu$")
+    ax2.axhline(y=INITIAL_MU, color='red', linestyle='--', label=f"True $\mu$ ({INITIAL_MU})")
+    ax2.set_title("System Identification: $\mu$ Convergence")
+    ax2.set_xlabel("Epochs")
+    ax2.set_ylabel("Value of $\mu$")
+    ax2.legend()
+    ax2.grid(True)
+
+    ax3.plot(x_true, v_true, 'b-', alpha=0.5, label='True Limit Cycle (RK4)', lw=2)
+    ax3.plot(x_pred, v_pred, 'r--', label='PINN Limit Cycle', lw=2)
+    # Highlight the origin crosshairs
+    ax3.axhline(0, color='black', linestyle='-', lw=0.8, alpha=0.5)
+    ax3.axvline(0, color='black', linestyle='-', lw=0.8, alpha=0.5)
+    ax3.set_title("Phase Space Portrait Comparison")
+    ax3.set_xlabel("Position ($x$)")
+    ax3.set_ylabel("Velocity ($v = \dot{x}$)")
+    ax3.legend()
+    ax3.grid(True, linestyle=':', alpha=0.6)
+
+    print(f"Predicted $\mu$ = {model.mu.item()}")
+    print(f"Predicted $\mu$ error = {abs(model.mu.item() - INITIAL_MU)}")    
+    plt.tight_layout()
+    plt.savefig('prediction_result.png')

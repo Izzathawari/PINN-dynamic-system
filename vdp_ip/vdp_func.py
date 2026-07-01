@@ -96,4 +96,4 @@ class VDP:
         ax2.legend()
 
         plt.tight_layout()
-        plt.show()
+        plt.savefig('VDP_target.png')
