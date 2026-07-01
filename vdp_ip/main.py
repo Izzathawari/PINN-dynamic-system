@@ -27,7 +27,7 @@ def main ():
     """
     Feed into PINN
     """
-    random_points = np.linspace(0, len(t_timedata)-1, 300).astype(int)
+    random_points = np.linspace(0, len(t_timedata)-1, 50).astype(int)
 
     t_data_np = t_timedata[random_points]
     x_data_np = x_true_positions[random_points]
@@ -36,7 +36,7 @@ def main ():
     x_data = torch.tensor(x_data_np, dtype=torch.float32).view(-1,1)
 
     # Generate 400 uniform grid points for internal physics calculus checking
-    t_physics = torch.linspace(0, 30, 400, dtype=torch.float32).view(-1, 1)
+    t_physics = torch.linspace(0, 30, 1000, dtype=torch.float32).view(-1, 1)
 
     ##--------------------- Step 3 --------------------------------##
     """

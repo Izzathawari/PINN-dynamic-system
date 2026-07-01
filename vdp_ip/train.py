@@ -27,7 +27,7 @@ def train_model (model, t_data,x_data, t_physics, num_epochs, epoch_interval, le
     mu_history = []
 
     LAMBDA_1 = 1.0
-    LAMBDA_2 = 0.7
+    LAMBDA_2 = 1.0
 
     for epoch in tqdm(range (num_epochs), desc="Training VDP Inverse Problem..."):
 
