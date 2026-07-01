@@ -5,20 +5,20 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-
 def main ():
 
     ##-------------------Step 1----------------------------------##
     """
     Create observable data
     """
-    mu = 0.9
-    vanderpol = VDP(mu = mu)
+    INITIAL_MU = 1.8
+    vanderpol = VDP(mu = INITIAL_MU)
 
     t_timedata = np.linspace(0, 30,1000)
-    initial_condition = [0.0,-1e-3]
+    initial_condition = [0.5,0.0]
     print(f"-----Preparing Vander Pol Data via RK4-----")
     true_data = vanderpol.generate_trajectory(initial_condition, t_timedata)
+    plot_data = vanderpol.plot_trajectory(initial_condition, t_timedata)
     x_true_positions = true_data[:,0]
 
 
@@ -42,10 +42,10 @@ def main ():
     """
     Set Up and train PINN Experiment
     """
-    INITIAL_MU = 1.8
-    NUM_EPOCH = 5000
+    
+    NUM_EPOCH = 6000
     EPOCH_INTERVAL = 100
-    LEARNING_RATE = 1e-2
+    LEARNING_RATE = 1e-3
 
     model = PINNInverse(N_INPUT=1, N_OUTPUT=1, 
                         N_HIDDEN=64, 
@@ -89,7 +89,7 @@ def main ():
     
     # Right Plot: Parameter Convergence
     ax2.plot(mu_history, color='tab:orange', lw=2, label="Estimated $\mu$")
-    ax2.axhline(y=mu, color='red', linestyle='--', label=f"True $\mu$ ({mu})")
+    ax2.axhline(y=INITIAL_MU, color='red', linestyle='--', label=f"True $\mu$ ({INITIAL_MU})")
     ax2.set_title("System Identification: $\mu$ Convergence")
     ax2.set_xlabel("Epochs")
     ax2.set_ylabel("Value of $\mu$")

@@ -64,14 +64,15 @@ class VDP:
             
         return np.array(history)             # Convert to a NumPy array for easy slicing
     
-    def plot_trajectory (self, initial_condition, t_array):
+    def plot_trajectory(self, initial_condition, t_array):
 
         trajectory_data = self.generate_trajectory(initial_condition, t_array)
-        x_data = trajectory_data [:,0]
-        v_data = trajectory_data [:,1]
+        x_data = trajectory_data[:, 0]
+        v_data = trajectory_data[:, 1]
 
-        fig, (ax1, ax2) = plt.subplots(1,2, figsize= (10,8)) 
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5)) 
 
+        # Left Plot: Time Series
         ax1.plot(t_array, x_data, label="Position ($x$)", color="tab:blue", lw=2)
         ax1.set_title(f"Time Series ($\mu$={self.mu})")
         ax1.set_xlabel("Time ($t$)")
@@ -79,12 +80,19 @@ class VDP:
         ax1.grid(True)
         ax1.legend()
 
+        # Right Plot: Phase Space Portrait
         ax2.plot(x_data, v_data, label="State Path", color="tab:orange", lw=2)
         ax2.scatter(initial_condition[0], initial_condition[1], color="red", zorder=5, label="Initial State")
+        
+        # --- ADDED: Explicit Origin Axis Crosshairs ---
+        # Draws clean, solid horizontal and vertical lines exactly at zero
+        ax2.axhline(0, color='black', linestyle='-', lw=1.0, alpha=0.6)
+        ax2.axvline(0, color='black', linestyle='-', lw=1.0, alpha=0.6)
+        
         ax2.set_title(f"Phase Space Portrait ($\mu$={self.mu})")
         ax2.set_xlabel("Position ($x$)")
         ax2.set_ylabel("Velocity ($v = \dot{x}$)")
-        ax2.grid(True)
+        ax2.grid(True, linestyle=':', alpha=0.6) # Subtle background grid
         ax2.legend()
 
         plt.tight_layout()
