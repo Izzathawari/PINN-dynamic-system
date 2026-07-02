@@ -38,7 +38,7 @@ def train_model (model, t_data,x_data, t_physics, num_epochs, epoch_interval, le
         
     return loss_history, mu_history
 
-def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_data, mu_history,INITIAL_MU):
+def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_data, mu_history,INITIAL_MU, TARGET_MU):
 
     t_test = t_test.clone().detach().requires_grad_(True)
 
@@ -51,9 +51,10 @@ def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_da
         create_graph=False
     )[0]
     
-    x_pred = x_pred_tensor.cpu().numpy().flatten()
-    v_pred = v_pred_tensor.cpu().numpy().flatten()
-    t_test = t_test.cpu().numpy().flatten()
+    x_pred = x_pred_tensor.detach().numpy()
+    v_pred = v_pred_tensor.detach().numpy()
+    t_test = t_test.detach().numpy()
+
     t_train_data = t_train_data.cpu().numpy().flatten()
     x_train_data = x_train_data.cpu().numpy().flatten()
     
@@ -72,7 +73,7 @@ def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_da
     
     # Right Plot: Parameter Convergence
     ax2.plot(mu_history, color='tab:orange', lw=2, label="Estimated $\mu$")
-    ax2.axhline(y=INITIAL_MU, color='red', linestyle='--', label=f"True $\mu$ ({INITIAL_MU})")
+    ax2.axhline(y=TARGET_MU, color='red', linestyle='--', label=f"True $\mu$ ({TARGET_MU})")
     ax2.set_title("System Identification: $\mu$ Convergence")
     ax2.set_xlabel("Epochs")
     ax2.set_ylabel("Value of $\mu$")
@@ -90,7 +91,11 @@ def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_da
     ax3.legend()
     ax3.grid(True, linestyle=':', alpha=0.6)
 
+
+    print("\n================ PINN METRICS EVALUATION ================")
+    print(f"True $\mu$ = {TARGET_MU}")
     print(f"Predicted $\mu$ = {model.mu.item()}")
-    print(f"Predicted $\mu$ error = {abs(model.mu.item() - INITIAL_MU)}")    
+    print(f"Predicted $\mu$ error = {(abs(model.mu.item() - TARGET_MU)/TARGET_MU)*100}") 
+    print("=========================================================")   
     plt.tight_layout()
     plt.savefig('prediction_result.png')
