@@ -28,7 +28,7 @@ def main ():
     """
     Feed into PINN
     """
-    TRAINING_POINTS = 500
+    TRAINING_POINTS = 300
     COLLOCATION_POINTS = 10000
     random_points = np.linspace(0, len(t_timedata)-1, TRAINING_POINTS).astype(int)
 
