@@ -16,7 +16,7 @@ def main ():
 
     t_timedata = np.linspace(0, 50,1000)
     initial_condition = [0.5,0.0]
-    print(f"-----Preparing Vander Pol Data via RK4-----")
+    print(f"\n-----Preparing Vander Pol Data via RK4-----")
     true_data = vanderpol.generate_trajectory(initial_condition, t_timedata)
     plot_data = vanderpol.plot_trajectory(initial_condition, t_timedata)
     x_true_positions = true_data[:,0]
@@ -28,10 +28,15 @@ def main ():
     """
     Feed into PINN
     """
-    TRAINING_POINTS = 300
-    COLLOCATION_POINTS = 10000
-    random_points = np.linspace(0, len(t_timedata)-1, TRAINING_POINTS).astype(int)
+    TRAINING_POINTS = 1000
+    COLLOCATION_POINTS = TRAINING_POINTS
+    TRAIN_LENGTH = 40
 
+    train_length = t_timedata <= TRAIN_LENGTH
+    t_train_window = t_timedata[train_length]
+    x_train_window = x_true_positions[train_length]
+
+    random_points = np.linspace(0, len(t_train_window)-1, TRAINING_POINTS).astype(int)
     t_data_np = t_timedata[random_points]
     x_data_np = x_true_positions[random_points]
 
@@ -39,7 +44,7 @@ def main ():
     x_train_data = torch.tensor(x_data_np, dtype=torch.float32).view(-1,1)
 
     # Generate 400 uniform grid points for internal physics calculus checking
-    t_physics = torch.linspace(0, 50, COLLOCATION_POINTS, dtype=torch.float32).view(-1, 1)
+    t_physics = torch.linspace(0, TRAIN_LENGTH, COLLOCATION_POINTS, dtype=torch.float32).view(-1, 1)
 
     ##--------------------- Step 3 --------------------------------##
     """
@@ -69,7 +74,7 @@ def main ():
     """
     Prediction
     """
-    t_test_np = np.linspace(0, 50, 1000)
+    t_test_np = np.linspace(TRAIN_LENGTH, 50, 1000)
     t_test_tensor = torch.tensor(t_test_np, dtype=torch.float32).view(-1,1)
 
     predict_model(model, t_test_tensor,t_timedata,x_true_positions,v_true_positions ,t_train_data, x_train_data,mu_history,INITIAL_MU, TARGET_MU)

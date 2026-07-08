@@ -64,8 +64,9 @@ def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_da
     # Left Plot: Trajectory Tracking
     ax1.plot(t_true, x_true, 'b-', alpha=0.5, label='True Trajectory (RK4)', lw=2)
     ax1.plot(t_test, x_pred, 'r--', label='PINN Prediction', lw=2)
-    ax1.scatter(t_train_data, x_train_data, color='black', zorder=5, label='Sparse Training Data')
+    # ax1.scatter(t_train_data, x_train_data, color='black', zorder=5, label='Sparse Training Data')
     ax1.set_title(f"Trajectory Reconstruction (Discovered $\mu$={model.mu.item():.2f})")
+    ax1.axvline(x=40.0, color='gray', linestyle=':')
     ax1.set_xlabel("Time ($t$)")
     ax1.set_ylabel("Position ($x$)")
     ax1.legend()
