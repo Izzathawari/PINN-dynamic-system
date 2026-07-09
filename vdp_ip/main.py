@@ -29,7 +29,9 @@ def main ():
     Feed into PINN
     """
     TRAINING_POINTS = 1000
-    COLLOCATION_POINTS = TRAINING_POINTS
+    COLLOCATION_POINTS = 1000
+    COLLOCATION_POINTS_START = 0
+    COLLOCATION_POINTS_END = 50
     TRAIN_LENGTH = 40
 
     train_length = t_timedata <= TRAIN_LENGTH
@@ -44,7 +46,7 @@ def main ():
     x_train_data = torch.tensor(x_data_np, dtype=torch.float32).view(-1,1)
 
     # Generate 400 uniform grid points for internal physics calculus checking
-    t_physics = torch.linspace(0, TRAIN_LENGTH, COLLOCATION_POINTS, dtype=torch.float32).view(-1, 1)
+    t_physics = torch.linspace(COLLOCATION_POINTS_START, COLLOCATION_POINTS_END, COLLOCATION_POINTS, dtype=torch.float32).view(-1, 1)
 
     ##--------------------- Step 3 --------------------------------##
     """
@@ -74,7 +76,10 @@ def main ():
     """
     Prediction
     """
-    t_test_np = np.linspace(TRAIN_LENGTH, 50, 1000)
+    PREDICT_LENGTH_START = 0
+    PREDICT_LENGTH_END = 50
+
+    t_test_np = np.linspace(PREDICT_LENGTH_START, PREDICT_LENGTH_END, 1000)
     t_test_tensor = torch.tensor(t_test_np, dtype=torch.float32).view(-1,1)
 
     predict_model(model, t_test_tensor,t_timedata,x_true_positions,v_true_positions ,t_train_data, x_train_data,mu_history,INITIAL_MU, TARGET_MU)

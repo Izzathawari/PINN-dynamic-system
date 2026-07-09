@@ -78,7 +78,7 @@ class VDP:
         ax1.set_xlabel("Time ($t$)")
         ax1.set_ylabel("Displacement ($x$)")
         ax1.grid(True)
-        ax1.legend()
+        # ax1.legend()
 
         # Right Plot: Phase Space Portrait
         ax2.plot(x_data, v_data, label="State Path", color="tab:orange", lw=2)
@@ -93,7 +93,7 @@ class VDP:
         ax2.set_xlabel("Position ($x$)")
         ax2.set_ylabel("Velocity ($v = \dot{x}$)")
         ax2.grid(True, linestyle=':', alpha=0.6) # Subtle background grid
-        ax2.legend()
+        # ax2.legend()
 
         plt.tight_layout()
         plt.savefig('VDP_target.png')

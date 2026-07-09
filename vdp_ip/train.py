@@ -69,7 +69,7 @@ def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_da
     ax1.axvline(x=40.0, color='gray', linestyle=':')
     ax1.set_xlabel("Time ($t$)")
     ax1.set_ylabel("Position ($x$)")
-    ax1.legend()
+    # ax1.legend()
     ax1.grid(True)
     
     # Right Plot: Parameter Convergence
@@ -78,7 +78,7 @@ def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_da
     ax2.set_title("System Identification: $\mu$ Convergence")
     ax2.set_xlabel("Epochs")
     ax2.set_ylabel("Value of $\mu$")
-    ax2.legend()
+    # ax2.legend()
     ax2.grid(True)
 
     ax3.plot(x_true, v_true, 'b-', alpha=0.5, label='True Limit Cycle (RK4)', lw=2)
@@ -89,7 +89,7 @@ def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_da
     ax3.set_title("Phase Space Portrait Comparison")
     ax3.set_xlabel("Position ($x$)")
     ax3.set_ylabel("Velocity ($v = \dot{x}$)")
-    ax3.legend()
+    # ax3.legend()         
     ax3.grid(True, linestyle=':', alpha=0.6)
 
 
