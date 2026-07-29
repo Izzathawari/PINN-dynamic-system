@@ -38,7 +38,7 @@ def train_model (model, t_data,x_data, t_physics, num_epochs, epoch_interval, le
         
     return loss_history, mu_history
 
-def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_data, mu_history,INITIAL_MU, TARGET_MU):
+def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_data, mu_history,INITIAL_MU, TARGET_MU, save_path=None):
 
     t_test = t_test.clone().detach().requires_grad_(True)
 
@@ -97,6 +97,10 @@ def predict_model (model,t_test, t_true, x_true,v_true, t_train_data, x_train_da
     print(f"True $\mu$ = {TARGET_MU}")
     print(f"Predicted $\mu$ = {model.mu.item()}")
     print(f"Predicted $\mu$ error = {(abs(model.mu.item() - TARGET_MU)/TARGET_MU)*100}") 
-    print("=========================================================")   
-    plt.tight_layout()
-    plt.savefig('prediction_result.png')
+    print("=========================================================")  
+    if save_path:
+        plt.tight_layout()
+        plt.savefig(save_path)
+    
+    
+    plt.close(fig)
