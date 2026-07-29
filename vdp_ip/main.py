@@ -31,22 +31,26 @@ def main ():
     TRAINING_POINTS = 1000
     COLLOCATION_POINTS = 1000
     COLLOCATION_POINTS_START = 0
-    COLLOCATION_POINTS_END = 50
+    COLLOCATION_POINTS_END = 40
     TRAIN_LENGTH = 40
+    DELTA_T = 0.05
 
-    train_length = t_timedata <= TRAIN_LENGTH
-    t_train_window = t_timedata[train_length]
-    x_train_window = x_true_positions[train_length]
+    t_full_np = np.arange(0, 50 + DELTA_T / 2, DELTA_T)
 
-    random_points = np.linspace(0, len(t_train_window)-1, TRAINING_POINTS).astype(int)
-    t_data_np = t_timedata[random_points]
-    x_data_np = x_true_positions[random_points]
+    t_train_np = t_full_np[t_full_np <= 40.0]
+    t_test_np  = t_full_np[t_full_np >= 40.0]
 
-    t_train_data = torch.tensor(t_data_np, dtype=torch.float32).view(-1,1)
-    x_train_data = torch.tensor(x_data_np, dtype=torch.float32).view(-1,1)
+    x_train_np = vanderpol.generate_trajectory(initial_condition, t_train_np)[:, 0]
 
-    # Generate 400 uniform grid points for internal physics calculus checking
-    t_physics = torch.linspace(COLLOCATION_POINTS_START, COLLOCATION_POINTS_END, COLLOCATION_POINTS, dtype=torch.float32).view(-1, 1)
+    t_train_data = torch.tensor(t_train_np, dtype=torch.float32).view(-1, 1)
+    x_train_data = torch.tensor(x_train_np, dtype=torch.float32).view(-1, 1)
+
+    # Collocation points use the exact same train grid
+    t_physics = t_train_data.clone()
+    # Collocation points cover the FULL range (0s to 50s -> 1001 points)
+    # t_physics = torch.tensor(t_full_np, dtype=torch.float32).view(-1, 1)
+
+    t_test_tensor = torch.tensor(t_test_np, dtype=torch.float32).view(-1,1)
 
     ##--------------------- Step 3 --------------------------------##
     """
@@ -76,11 +80,11 @@ def main ():
     """
     Prediction
     """
-    PREDICT_LENGTH_START = 0
+    PREDICT_LENGTH_START = 40
     PREDICT_LENGTH_END = 50
 
-    t_test_np = np.linspace(PREDICT_LENGTH_START, PREDICT_LENGTH_END, 1000)
-    t_test_tensor = torch.tensor(t_test_np, dtype=torch.float32).view(-1,1)
+
+   
 
     predict_model(model, t_test_tensor,t_timedata,x_true_positions,v_true_positions ,t_train_data, x_train_data,mu_history,INITIAL_MU, TARGET_MU)
     

@@ -1,0 +1,2 @@
+/mnt/c/Users/abdul/Documents/"Nagaoka Uni"/"00_Nagaoka Master"/M1/"06_Code_実験"/PINN-
+dynamic-system
