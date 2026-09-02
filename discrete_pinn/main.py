@@ -1,12 +1,10 @@
-from logistic_map import LogisticMap
+from train_model import train
 
 
 
 def main ():
 
-    logistic_eq = LogisticMap(alpha=3.99)
-    plot_bifurcation = logistic_eq.plot_bifurcation()
-    run_map = logistic_eq.plot_time_series()
+    trained_model = train()
     return 0
 
 

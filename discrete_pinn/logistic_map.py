@@ -7,7 +7,7 @@ class LogisticMap:
     def __init__(self, alpha):
         self.alpha = alpha
 
-    def run_map(self, initial_val=0.5, transient_state=100, steady_state=200):
+    def run_trajectory(self, initial_val, transient_state, steady_state):
         x = initial_val
         
         # Discard transient iterations
