@@ -1,10 +1,10 @@
 from train_model import train
-
+from train_model import convert_data2pd
 
 
 def main ():
 
-    trained_model = train()
+    data2panda = convert_data2pd()
     return 0
 
 

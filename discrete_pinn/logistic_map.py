@@ -63,8 +63,8 @@ class LogisticMap:
         
         plt.figure(figsize=(9, 4))
         plt.plot(vals, 'o-', markersize=4, linewidth=1, color='teal')
-        plt.title(f"Logistic Map Trajectory ($\alpha = {alpha}$, $x_0 = {x0}$)")
         plt.xlabel("Iteration Step ($n$)")
+        plt.title(f"Logistic Map Trajectory ($\alpha = {alpha}$, $x_0 = {x0}$)")
         plt.ylabel(r"$x_n$")
         plt.grid(True, linestyle="--", alpha=0.5)
         plt.savefig(save_filename)
