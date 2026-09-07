@@ -1,10 +1,11 @@
-from train_model import train
-from train_model import convert_data2pd
 
+from logistic_map import LogisticMap
+from train_model import train
 
 def main ():
 
-    data2panda = convert_data2pd()
+    train()
+    
     return 0
 
 

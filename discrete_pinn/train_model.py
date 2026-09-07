@@ -12,75 +12,6 @@ from physics_loss import LossCalc
 from logistic_map import LogisticMap
 
 
-def make_data_splits(x_trajectory, train_ratio=0.6, validation_ratio=0.2):
-    """Convert a trajectory into chronological train, validation, and test pairs."""
-    x_current = torch.tensor(x_trajectory[:-1], dtype=torch.float32).unsqueeze(1)
-    x_next = torch.tensor(x_trajectory[1:], dtype=torch.float32).unsqueeze(1)
-
-    n_samples = len(x_current)
-    train_end = int(train_ratio * n_samples)
-    validation_end = int((train_ratio + validation_ratio) * n_samples)
-
-
-    return (
-        (x_current[:train_end], x_next[:train_end]),
-        (x_current[train_end:validation_end], x_next[train_end:validation_end]),
-        (x_current[validation_end:], x_next[validation_end:]),
-    )
-
-def convert_data2pd(excel_filename="output_dir/dataset_splits.xlsx"):
-    """
-    Converts PyTorch data splits into Pandas DataFrames and saves them
-    into a multi-sheet Excel file.
-    """
-    logistic_map = LogisticMap(alpha=2)
-    x_trajectory = logistic_map.run_trajectory(initial_val=0.5, transient_state=1000, steady_state=200)
-    train_data, validation_data, test_data = make_data_splits(x_trajectory)
-    splits = {
-        "Train": train_data,
-        "Validation": validation_data,
-        "Test": test_data
-    }
-    
-    dfs = {}
-    combined_rows = []
-    
-    global_idx = 0
-    for split_name, (x_curr, x_next) in splits.items():
-        curr_arr = x_curr.squeeze().detach().cpu().numpy()
-        next_arr = x_next.squeeze().detach().cpu().numpy()
-        
-        df_split = pd.DataFrame({
-            "step_index": np.arange(len(curr_arr)),
-            "x_n": curr_arr,
-            "x_next_true": next_arr
-        })
-        dfs[split_name] = df_split
-        
-        for local_idx, (xn, xnext) in enumerate(zip(curr_arr, next_arr)):
-            combined_rows.append({
-                "global_index": global_idx,
-                "split": split_name,
-                "local_index": local_idx,
-                "x_n": xn,
-                "x_next_true": xnext
-            })
-            global_idx += 1
-
-    df_all = pd.DataFrame(combined_rows)
-    dfs["All"] = df_all
-
-    # Path resolution and auto-folder creation
-    excel_path = Path(excel_filename)
-    excel_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
-        df_all.to_excel(writer, sheet_name="All_Data", index=False)
-        for name in ("Train", "Validation", "Test"):
-            dfs[name].to_excel(writer, sheet_name=name, index=False)
-
-    print(f"Data successfully saved to {excel_path.resolve()}")
-    return dfs
 
 def evaluate(model, criterion, data):
     x_current, x_next = data
@@ -142,19 +73,15 @@ def plot_predictions(model, datasets, save_filename="output_dir/pinn_predictions
 
 def train():
     # Setup data
-    logistic_map = LogisticMap(alpha=2)
+    logistic_map = LogisticMap(alpha=3.99)
     x_trajectory = logistic_map.run_trajectory(initial_val=0.5, transient_state=1000, steady_state=200)
-    train_data, validation_data, test_data = make_data_splits(x_trajectory)
+    train_data, validation_data, test_data = logistic_map.make_data_splits(x_trajectory)
     x_curr, x_next = train_data
-    x_curr_init = x_curr[0]
 
     # Instantiate Model, Loss, and Optimizer
-    N_INPUT = 1
-    N_HIDDEN = 16
-    N_OUTPUT = 1
-    R_INIT = 1.99
+   
 
-    model = PINN(N_INPUT, N_HIDDEN, N_OUTPUT, R_INIT)
+    model = PINN(N_INPUT =1, N_HIDDEN= 8, N_OUTPUT=1, R_INIT = 1.99)
     criterion = LossCalc()
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
     
@@ -169,7 +96,7 @@ def train():
         x_next_pred = model(x_curr)
         
         # Compute combined loss
-        total_loss = criterion(x_curr_init, x_next_pred, x_next, model.r)
+        total_loss = criterion(x_curr, x_next_pred, x_next, model.r)
         
         # Backpropagation
         total_loss.backward()
@@ -178,11 +105,10 @@ def train():
         if epoch % 100 == 0:
             pbar.set_postfix({
                 "Loss": f"{total_loss.item():.5f}",
-                "Val loss": f"{evaluate(model, criterion, validation_data):.5f}",
                 "Discovered r": f"{model.r.item():.4f}"
             })
 
-        x_curr_init = x_next_pred[0]
+        
 
     test_loss = evaluate(model, criterion, test_data)
     plot_predictions(model, (train_data, validation_data, test_data))
