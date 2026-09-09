@@ -2,26 +2,33 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from pathlib import Path
+import pandas as pd
+
 
 
 class LogisticMap:
     def __init__(self, alpha):
         self.alpha = alpha
+        self.trajectory = None
 
-    def run_trajectory(self, initial_val, transient_state, steady_state):
+
+    def run_trajectory(self, initial_val=0.2, transient_step= 500, steady_step=100):
         x = initial_val
         
         # Discard transient iterations
-        for _ in range(transient_state):
+        for _ in range(transient_step):
             x = self.alpha * x * (1 - x)
             
         # Collect steady-state / attractor values
-        trajectory = []
-        for _ in range(steady_state):
+        data  = []
+        for _ in range(steady_step):
             x = self.alpha * x * (1 - x)
-            trajectory.append(x)
-            
-        return np.array(trajectory)
+            data.append(x)
+
+        self.trajectory = np.array(data)
+        return self.trajectory 
+
+
 
     @staticmethod
     def plot_bifurcation(r_min=2.5, r_max=4.0, num_r=1000, iterations=500, last=100):
@@ -52,45 +59,45 @@ class LogisticMap:
         plt.savefig(save_filename)
 
     
-    def plot_time_series(self, x0=0.2, steps=100):
+    def plot_time_series(self):
         """Plots the time series x_n vs n for a single alpha."""
-        model = LogisticMap(alpha=self.alpha)
-        vals = model.run_trajectory(initial_val=x0, transient_state=500, steady_state=steps)
+        
 
+        if self.trajectory is None:
+            raise ValueError ("No trajectory Found !!")
 
         output_dir = Path("output_dir")
         output_dir.mkdir(parents=True, exist_ok=True)
         save_filename = output_dir/f"time_series.png"
         
         plt.figure(figsize=(9, 4))
-        plt.plot(vals, 'o-', markersize=4, linewidth=1, color='teal')
+        plt.plot(self.trajectory, 'o-', markersize=4, linewidth=1, color='teal')
         plt.xlabel("Iteration Step ($n$)")
-        plt.title(f"Logistic Map Trajectory ($alpha = {self.alpha}$, $x_0 = {x0}$)")
+        plt.title(f"Logistic Map Trajectory ($alpha = {self.alpha}$)")
         plt.ylabel(r"$x_n$")
         plt.grid(True, linestyle="--", alpha=0.5)
         plt.savefig(save_filename)
 
 
-    def make_data_splits(self,x_trajectory, train_ratio=0.6, validation_ratio=0.2):
+    def make_data_splits(self,train_ratio=0.6):
 
         """Convert a trajectory into chronological train, validation, and test pairs."""
+        if self.trajectory is None:
+                    raise ValueError ("No trajectory Found !!")
+        
+        trajectory = self.trajectory 
 
-        logistic_map = LogisticMap(self.alpha)
-        x_trajectory = logistic_map.run_trajectory(initial_val=0.5, transient_state=1000, steady_state=200)
-
-
-        x_current = torch.tensor(x_trajectory[:-1], dtype=torch.float32).unsqueeze(1)
-        x_next = torch.tensor(x_trajectory[1:], dtype=torch.float32).unsqueeze(1)
+        x_current = torch.tensor(trajectory[:-1], dtype=torch.float32).unsqueeze(1)
+        x_next = torch.tensor(trajectory[1:], dtype=torch.float32).unsqueeze(1)
 
         n_samples = len(x_current)
         train_end = int(train_ratio * n_samples)
-        validation_end = int((train_ratio + validation_ratio) * n_samples)
 
 
         return (
-            (x_current[:train_end], x_next[:train_end]),
-            (x_current[train_end:validation_end], x_next[train_end:validation_end]),
-            (x_current[validation_end:], x_next[validation_end:]),
+            (x_current[:train_end], x_next[:train_end]), # Train Length
+            (x_current[train_end:], x_next[train_end:]), #Test 
+           
         )
 
     def convert_data2pd(self,excel_filename="output_dir/dataset_splits.xlsx"):
@@ -99,15 +106,14 @@ class LogisticMap:
         Top header:    [      Train      ] [   Validation    ] [      Test       ]
         Sub header:    [  x_n  |  x_n+1  ] [  x_n  |  x_n+1  ] [  x_n  |  x_n+1  ]
         """
-        logistic_map = LogisticMap(self.alpha)
-        x_trajectory = logistic_map.run_trajectory(initial_val=0.5, transient_state=1000, steady_state=200)
+        if LogisticMap.make_data_splits(self) is None:
+                    raise ValueError ("Error Here !!")
+        
 
-
-        train_data, validation_data, test_data = LogisticMap.make_data_splits(x_trajectory)
+        train_data, test_data = LogisticMap.make_data_splits(self)
 
         splits = {
             "Train": train_data,
-            "Validation": validation_data,
             "Test": test_data
         }
 

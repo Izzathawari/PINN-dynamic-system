@@ -4,7 +4,11 @@ from train_model import train
 
 def main ():
 
-    train()
+    lm = LogisticMap(alpha=3.99)
+    lm.run_trajectory()
+    lm.plot_time_series()
+    lm.make_data_splits()
+    lm.convert_data2pd()
     
     return 0
 
