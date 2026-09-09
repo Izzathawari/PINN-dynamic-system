@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from tqdm import tqdm
 import pandas as pd
-import os
 
 from model import PINN
 from physics_loss import LossCalc
@@ -30,7 +29,7 @@ def plot_predictions(model, datasets, save_filename="output_dir/pinn_predictions
         
 
     """Plot observed and predicted transitions for all data splits."""
-    split_names = ("Train", "Validation", "Test")
+    split_names = ("Train", "Test")
     split_colors = ("tab:blue", "tab:orange", "tab:green")
     split_predictions = []
 
@@ -74,8 +73,8 @@ def plot_predictions(model, datasets, save_filename="output_dir/pinn_predictions
 def train():
     # Setup data
     logistic_map = LogisticMap(alpha=3.99)
-    x_trajectory = logistic_map.run_trajectory(initial_val=0.5, transient_state=1000, steady_state=200)
-    train_data, validation_data, test_data = logistic_map.make_data_splits(x_trajectory)
+    x_trajectory = logistic_map.run_trajectory()
+    train_data, test_data = logistic_map.make_data_splits(x_trajectory)
     x_curr, x_next = train_data
 
     # Instantiate Model, Loss, and Optimizer
@@ -85,7 +84,7 @@ def train():
     criterion = LossCalc()
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
     
-    epochs = 2000
+    epochs = 500
     pbar = tqdm(range(epochs), desc="Training PINN")
     
     for epoch in pbar:
@@ -111,7 +110,7 @@ def train():
         
 
     test_loss = evaluate(model, criterion, test_data)
-    plot_predictions(model, (train_data, validation_data, test_data))
+    plot_predictions(model, (train_data,  test_data))
     print(f"Test loss: {test_loss:.5f}")
     print(f"Discovered r: {model.r.item():.4f}")
     return model

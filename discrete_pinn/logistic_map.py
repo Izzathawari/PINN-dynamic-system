@@ -91,7 +91,9 @@ class LogisticMap:
         x_next = torch.tensor(trajectory[1:], dtype=torch.float32).unsqueeze(1)
 
         n_samples = len(x_current)
+        print(f"Sample : {n_samples}")
         train_end = int(train_ratio * n_samples)
+        print(f"Train End index : {train_end}")
 
 
         return (
@@ -106,11 +108,10 @@ class LogisticMap:
         Top header:    [      Train      ] [   Validation    ] [      Test       ]
         Sub header:    [  x_n  |  x_n+1  ] [  x_n  |  x_n+1  ] [  x_n  |  x_n+1  ]
         """
-        if LogisticMap.make_data_splits(self) is None:
-                    raise ValueError ("Error Here !!")
-        
+    
 
-        train_data, test_data = LogisticMap.make_data_splits(self)
+        train_data, test_data = self.make_data_splits()
+        print(f"Train data / Test Data {np.shape(train_data)}")
 
         splits = {
             "Train": train_data,
