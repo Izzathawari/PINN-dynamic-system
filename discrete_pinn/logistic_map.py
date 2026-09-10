@@ -8,25 +8,57 @@ import pandas as pd
 
 class LogisticMap:
     def __init__(self, alpha):
-        self.alpha = alpha
+        self.alpha = None
         self.trajectory = None
+        self.a = None
+        self.b = None
 
+    def logistic_map(self, state_x):
+         return self.alpha*state_x - self.alpha*state_x**2
 
-    def run_trajectory(self, initial_val=0.2, transient_step= 500, steady_step=100):
-        x = initial_val
+    def henon_map (self, state_x, state_y,a,b):
+         return 1-a*state_x**2 + state_y, b*state_x
+
+    def run_trajectory(self, map_function, transient_step= 500, steady_step=100):
         
-        # Discard transient iterations
-        for _ in range(transient_step):
-            x = self.alpha * x * (1 - x)
-            
-        # Collect steady-state / attractor values
-        data  = []
-        for _ in range(steady_step):
-            x = self.alpha * x * (1 - x)
-            data.append(x)
 
-        self.trajectory = np.array(data)
-        return self.trajectory 
+        if map_function == "logistic_map":
+
+            state_x = 0.2
+            self.alpha = 3.99
+            # Discard transient iterations
+            for _ in range(transient_step):
+                state_x = self.logistic_map(state_x)
+                
+            # Collect steady-state / attractor values
+            data  = []
+            for _ in range(steady_step):
+                state_x = self.logistic_map(state_x)
+                data.append(state_x)
+
+            self.trajectory = np.array(data)
+            return self.trajectory 
+
+        if map_function == "henon_map":
+
+            state_x = 0.1
+            state_y = 0.1
+            a = self.a = 1.4
+            b = self.b = 0.3
+         
+             # Discard transient iterations
+            for _ in range(transient_step):
+                state_x, state_y = self.henon_map(state_x,state_y,a,b)
+
+
+            # Collect steady-state / attractor values
+            data  = []
+            for _ in range(steady_step):
+                state_x, state_y = self.henon_map(state_x,state_y,a,b)
+                data.append([state_x,state_y])
+
+            self.trajectory = np.array(data)
+            return self.trajectory 
 
 
 
@@ -59,25 +91,60 @@ class LogisticMap:
         plt.savefig(save_filename)
 
     
-    def plot_time_series(self):
+    def plot_time_series(self, map_function):
         """Plots the time series x_n vs n for a single alpha."""
         
+        if map_function == "logistic_map":
 
-        if self.trajectory is None:
-            raise ValueError ("No trajectory Found !!")
+            if self.trajectory is None:
+                raise ValueError ("No trajectory Found !!")
 
-        output_dir = Path("output_dir")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        save_filename = output_dir/f"time_series.png"
-        
-        plt.figure(figsize=(9, 4))
-        plt.plot(self.trajectory, 'o-', markersize=4, linewidth=1, color='teal')
-        plt.xlabel("Iteration Step ($n$)")
-        plt.title(f"Logistic Map Trajectory ($alpha = {self.alpha}$)")
-        plt.ylabel(r"$x_n$")
-        plt.grid(True, linestyle="--", alpha=0.5)
-        plt.savefig(save_filename)
+            output_dir = Path("output_dir")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            save_filename = output_dir/f"time_series.png"
+            
+            plt.figure(figsize=(9, 4))
+            plt.plot(self.trajectory, 'o-', markersize=4, linewidth=1, color='teal')
+            plt.xlabel("Iteration Step ($n$)")
+            plt.title(f"{map_function} Trajectory ($alpha = {self.alpha}$)")
+            plt.ylabel(r"$x_n$")
+            plt.grid(True, linestyle="--", alpha=0.5)
+            plt.savefig(save_filename)
 
+
+        if map_function=="henon_map":
+            if self.trajectory is None:
+                            raise ValueError ("No trajectory Found !!")
+
+            output_dir = Path("output_dir")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            save_filename = output_dir/f"{map_function}time_series.png"
+
+            fig,ax = plt.subplots(2,1, figsize=(9, 6))
+
+            ax[0].plot(self.trajectory[:, 0],
+                       "o-",markersize=3,
+                       linewidth=1,
+                       color="teal",)
+            ax[0].set_title(f"{map_function} X Trajectory")
+            ax[0].set_ylabel(r"$x_n$")
+            ax[0].grid(True, linestyle="--", alpha=0.5)
+
+            ax[1].plot(
+                    self.trajectory[:, 1],
+                    "o-",
+                    markersize=3,
+                    linewidth=1,
+                    color="coral",)
+            
+            ax[1].set_title(f"{map_function} Y Trajectory")
+            ax[1].set_xlabel("Iteration Step ($n$)")
+            ax[1].set_ylabel(r"$y_n$")
+            ax[1].grid(True, linestyle="--", alpha=0.5)
+
+            plt.tight_layout()
+            fig.savefig(save_filename, bbox_inches="tight")
+            plt.close(fig)
 
     def make_data_splits(self,train_ratio=0.6):
 
