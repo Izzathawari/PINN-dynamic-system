@@ -37,7 +37,7 @@ class LogisticMap:
                 data.append(state_x)
 
             self.trajectory = np.array(data)
-            return self.trajectory 
+            return self.trajectory, np.arange(0,steady_step,1)
 
         if map_function == "henon_map":
 
@@ -58,7 +58,7 @@ class LogisticMap:
                 data.append([state_x,state_y])
 
             self.trajectory = np.array(data)
-            return self.trajectory 
+            return self.trajectory, steady_step
 
 
 
@@ -120,7 +120,7 @@ class LogisticMap:
             output_dir.mkdir(parents=True, exist_ok=True)
             save_filename = output_dir/f"{map_function}time_series.png"
 
-            fig,ax = plt.subplots(2,1, figsize=(9, 6))
+            fig,ax = plt.subplots(3,1, figsize=(9, 6))
 
             ax[0].plot(self.trajectory[:, 0],
                        "o-",markersize=3,
@@ -142,6 +142,13 @@ class LogisticMap:
             ax[1].set_ylabel(r"$y_n$")
             ax[1].grid(True, linestyle="--", alpha=0.5)
 
+            ax[2].plot(self.trajectory[:,0], self.trajectory[:,1], ",")
+            ax[2].set_title(f"{map_function}")
+            ax[2].set_ylabel(r"$y_n$")
+            ax[2].set_xlabel(r"$x_n$")
+            ax[2].grid(True, linestyle="--", alpha=0.5)
+
+
             plt.tight_layout()
             fig.savefig(save_filename, bbox_inches="tight")
             plt.close(fig)
@@ -158,7 +165,8 @@ class LogisticMap:
         x_next = torch.tensor(trajectory[1:], dtype=torch.float32).unsqueeze(1)
 
         n_samples = len(x_current)
-        print(f"Sample : {n_samples}")
+        print(f"X_(n) sample: {n_samples}")
+
         train_end = int(train_ratio * n_samples)
         print(f"Train End index : {train_end}")
 

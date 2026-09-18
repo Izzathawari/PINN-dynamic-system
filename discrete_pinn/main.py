@@ -4,10 +4,12 @@ from train_model import train
 
 def main ():
 
-    lm = LogisticMap(alpha=3.99)  
-    lm.run_trajectory("henon_map") 
-    lm.plot_time_series("henon_map")
-    return 0
+    # lm = LogisticMap(alpha=3.99)
+    # run_trajectory = lm.run_trajectory("logistic_map")
+    # lm.plot_time_series("logistic_map")
+
+    train_model = train()
+
 
 
 
