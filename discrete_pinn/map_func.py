@@ -199,13 +199,23 @@ class MapFunction:
         for name, (x_curr, x_next) in splits.items():
             curr_arr = x_curr.squeeze().detach().cpu().numpy()
             next_arr = x_next.squeeze().detach().cpu().numpy()
-            
-            # Build individual 2-column DataFrame per split
-            split_dfs[name] = pd.DataFrame({
-                "x_n": curr_arr,
-                "x_n+1": next_arr
-            })
 
+            # Check if the data is 1D (Logistic) or 2D (Hénon)
+            if curr_arr.ndim == 1:
+                split_dfs[name] = pd.DataFrame({
+                    "x_n": curr_arr,
+                    "x_n+1": next_arr
+                })
+            else:
+                # For 2D Hénon map, create separate x and y columns
+                df_curr = pd.DataFrame(curr_arr, columns=["x_n", "y_n"])
+                df_next = pd.DataFrame(next_arr, columns=["x_n+1", "y_n+1"])
+                # Combine them side-by-side
+                split_dfs[name] = pd.concat([df_curr, df_next], axis=1)
+            
+                # Build individual 2-column DataFrame per split
+                split_dfs[name] = pd.concat([df_curr, df_next], axis=1)
+                
         # Concatenate side-by-side using keys to form 2-level column headers
         df_hierarchical = pd.concat(split_dfs, axis=1)
 

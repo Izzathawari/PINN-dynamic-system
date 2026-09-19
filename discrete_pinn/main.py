@@ -1,14 +1,12 @@
 
-from discrete_pinn.map_func import LogisticMap
+from map_func import MapFunction
 from train_model import train
 
 def main ():
 
-    # lm = LogisticMap(alpha=3.99)
-    # run_trajectory = lm.run_trajectory("logistic_map")
-    # lm.plot_time_series("logistic_map")
-
-    # train_model = train()
+    
+    map_func = "henon_map"
+    train_model = train(map_func)
 
 
 
