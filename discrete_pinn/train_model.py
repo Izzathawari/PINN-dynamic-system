@@ -7,7 +7,7 @@ from tqdm import tqdm
 import pandas as pd
 
 from model import PINN, LossCalc
-from logistic_map import LogisticMap
+from discrete_pinn.map_func import MapFunction
 
 
 
@@ -56,12 +56,27 @@ def plot_predictions(pred_data,true_data, save_filename="output_dir/pinn_predict
 
 
 
-def train():
-    # Setup data
-    logistic_map = LogisticMap(alpha=3.99)
-    x_trajectory, timestep = logistic_map.run_trajectory("logistic_map")
-    train_data, test_data = logistic_map.make_data_splits( )
+def train(map_func : str):
 
+    """
+    Argument : Type of map func
+
+    """
+    # Setup data
+    mapfunc = mapfunc
+
+    match mapfunc:
+        case "logistic_map":
+            map_data = MapFunction()
+            x_trajectory, timestep = map_data.run_trajectory("logistic_map")
+
+        case "henon_map":
+            map_data = MapFunction()
+            x_trajectory, timestep = map_data.run_trajectory("henon_map")
+               
+
+    
+    train_data, test_data = map_data.make_data_splits( )
     x_curr, x_next_true = train_data
     x_curr_test, x_next_test = test_data
     print(f"x_current shape: {x_curr.shape}")

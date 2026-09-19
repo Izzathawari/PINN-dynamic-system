@@ -6,8 +6,8 @@ import pandas as pd
 
 
 
-class LogisticMap:
-    def __init__(self, alpha):
+class MapFunction:
+    def __init__(self):
         self.alpha = None
         self.trajectory = None
         self.a = None
@@ -142,7 +142,7 @@ class LogisticMap:
             ax[1].set_ylabel(r"$y_n$")
             ax[1].grid(True, linestyle="--", alpha=0.5)
 
-            ax[2].plot(self.trajectory[:,0], self.trajectory[:,1], ",")
+            ax[2].plot(self.trajectory[:,0], self.trajectory[:,1], ",", lw=0.9)
             ax[2].set_title(f"{map_function}")
             ax[2].set_ylabel(r"$y_n$")
             ax[2].set_xlabel(r"$x_n$")
@@ -164,9 +164,11 @@ class LogisticMap:
         x_current = torch.tensor(trajectory[:-1], dtype=torch.float32).unsqueeze(1)
         x_next = torch.tensor(trajectory[1:], dtype=torch.float32).unsqueeze(1)
 
+        if x_current.dim() == 1:
+            x_current = x_current.unsqueeze(1)
+            x_next = x_next.unsqueeze(1)
+            
         n_samples = len(x_current)
-        print(f"X_(n) sample: {n_samples}")
-
         train_end = int(train_ratio * n_samples)
         print(f"Train End index : {train_end}")
 
