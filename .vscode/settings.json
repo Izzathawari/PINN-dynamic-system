@@ -1,4 +1,4 @@
 {
     "python-envs.defaultEnvManager": "ms-python.python:venv",
-    "editor.fontFamily": "'Google Sans Code', Consolas, 'Courier New', monospace"
+    "editor.fontFamily": "'Google Sans Code Monospaced', Consolas, 'Courier New', monospace"
 }
