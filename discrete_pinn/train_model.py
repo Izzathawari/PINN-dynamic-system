@@ -131,10 +131,10 @@ def train(map_func : str):
     test_loss, x_next_pred = evaluate(model, criterion, test_data)
     plot_predictions(x_next_pred,x_next_test)
     print(f"Test loss: {test_loss:.5f}")
-    print(f"Discovered Parameters: {model.a.item():4f}")
-    # for name, param in model.named_parameters():
-    #     if "net" not in name:
-    #         print(f"  {name} = {param.item():.4f}")
+    print("Discovered Parameters:")
+    for name, param in model.named_parameters():
+        if "net" not in name:
+            print(f"  {name} = {param.item():.4f}")
 
 
     return model

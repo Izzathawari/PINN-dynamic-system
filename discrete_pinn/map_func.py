@@ -161,8 +161,8 @@ class MapFunction:
         
         trajectory = self.trajectory 
 
-        x_current = torch.tensor(trajectory[:-1], dtype=torch.float32).unsqueeze(1)
-        x_next = torch.tensor(trajectory[1:], dtype=torch.float32).unsqueeze(1)
+        x_current = torch.tensor(trajectory[:-1], dtype=torch.float32)
+        x_next = torch.tensor(trajectory[1:], dtype=torch.float32)
 
         if x_current.dim() == 1:
             x_current = x_current.unsqueeze(1)
