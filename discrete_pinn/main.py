@@ -1,13 +1,14 @@
 
-from map_func import MapFunction
+from data_creation import MapFunction
 from train_model import train
 
 def main ():
 
     
-    map_func = "henon_map"
-    train_model = train(map_func)
+    map_function = MapFunction()
 
+    Henon_map = map_function.run_trajectory("henon_map")
+    map_function.convert_data2pd()
 
 
 

@@ -7,7 +7,7 @@ from tqdm import tqdm
 import pandas as pd
 
 from model import PINN, LossCalc, LogisticPINN, HenonPINN
-from map_func import MapFunction
+from data_creation import MapFunction
 
 
 

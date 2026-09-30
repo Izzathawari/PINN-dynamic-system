@@ -3,6 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 from pathlib import Path
 import pandas as pd
+import os
 
 
 
@@ -20,7 +21,11 @@ class MapFunction:
          return 1-a*state_x**2 + state_y, b*state_x
 
     def run_trajectory(self, map_function, transient_step= 500, steady_step=100):
-        
+        """
+        Argument : map_function (ex: logistic_map)
+
+        Process: Run the system for 500 iters, plot the 600 iters (steady_steps)
+        """
 
         if map_function == "logistic_map":
 
@@ -179,7 +184,7 @@ class MapFunction:
            
         )
 
-    def convert_data2pd(self,excel_filename="output_dir/dataset_splits.xlsx"):
+    def convert_data2pd(self,output_dir="output_dir/"):
         """
         Converts PyTorch data splits into a hierarchical two-level Excel format:
         Top header:    [      Train      ] [   Validation    ] [      Test       ]
@@ -202,11 +207,14 @@ class MapFunction:
 
             # Check if the data is 1D (Logistic) or 2D (Hénon)
             if curr_arr.ndim == 1:
+                function_name = "logistic_map"
                 split_dfs[name] = pd.DataFrame({
                     "x_n": curr_arr,
                     "x_n+1": next_arr
                 })
+
             else:
+                function_name = "henon_map"
                 # For 2D Hénon map, create separate x and y columns
                 df_curr = pd.DataFrame(curr_arr, columns=["x_n", "y_n"])
                 df_next = pd.DataFrame(next_arr, columns=["x_n+1", "y_n+1"])
@@ -220,14 +228,16 @@ class MapFunction:
         df_hierarchical = pd.concat(split_dfs, axis=1)
 
         # Path resolution and auto-folder creation
-        excel_path = Path(excel_filename)
-        excel_path.parent.mkdir(parents=True, exist_ok=True)
+        # excel_dir = Path(output_dir)
+        # excel_dir.parent.mkdir(parents=True, exist_ok=True)
+        # excel_file_output = os.path.join(output_dir , "dataset_" , function_name)
+        
 
         # Write to Excel (index=True shows step row numbers 0, 1, 2, ...)
-        with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
-            df_hierarchical.to_excel(writer, sheet_name="Data_Splits", index=True)
+        with pd.ExcelWriter("output_dir/dataset_split_map.xlsx", engine="openpyxl") as writer:
+            df_hierarchical.to_excel(writer,index=True)
 
-        print(f"Hierarchical data successfully saved to {excel_path.resolve()}")
+        # print(f"Hierarchical data successfully saved to {excel_file_output.resolve()}")
         return df_hierarchical
 
                     
