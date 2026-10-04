@@ -8,6 +8,7 @@ import pandas as pd
 
 from model import PINN, LossCalc, LogisticPINN, HenonPINN
 from data_creation import MapFunction
+from data_setup import create_delay_embedding
 
 
 
@@ -16,7 +17,7 @@ def evaluate(model, criterion, data):
     model.eval()
     with torch.no_grad():
         x_next_pred = model(x_current)
-        loss = criterion(model, x_next_pred, x_next, x_current= False, calc_physics = False)
+        loss = criterion(model, x_next_pred, x_next, x_current= x_current, calc_physics = False)
     return loss.item(), x_next_pred
 
 
@@ -77,19 +78,25 @@ def train(map_func : str):
             map_data = MapFunction()
             x_trajectory, timestep = map_data.run_trajectory("logistic_map")
             model = LogisticPINN(n_hidden= 8, r_init=1.99)
+            train_data, test_data = map_data.make_data_splits( )
+            x_curr_train, x_next_train = train_data
+            x_curr_test, x_next_test = test_data
 
         case "henon_map":
             map_data = MapFunction()
-            x_trajectory, timestep = map_data.run_trajectory("henon_map")
+            henon_trajectory, timestep = map_data.run_trajectory("henon_map")
             model = HenonPINN(n_hidden= 8, a_init=0.9 , b_init=0.7)
-            
 
+            x_timeseries = henon_trajectory[:,0:1]
+
+            split_idx = int(len(x_timeseries) * 0.8)
+            train_series = x_timeseries[:split_idx]
+            test_series = x_timeseries[split_idx:]
+
+            x_curr_train, x_next_train = create_delay_embedding(train_series)
+            x_curr_test, x_next_test = create_delay_embedding(test_series)
     
-    train_data, test_data = map_data.make_data_splits( )
-    x_curr, x_next_true = train_data
-    x_curr_test, x_next_test = test_data
-    print(f"x_current shape: {x_curr.shape}")
-    print(f"x_next shape: {x_next_true.shape}")
+            test_data = (x_curr_test, x_next_test)
 
 
     # Instantiate Model, Loss, and Optimizer
@@ -105,10 +112,10 @@ def train(map_func : str):
         model.train()
         
         # Forward pass: predict x_{n+1} from x_n
-        x_next_pred = model(x_curr)
+        x_next_pred = model(x_curr_train)
         
         # Compute combined loss
-        total_loss = criterion( model, x_next_pred, x_next_true,x_curr,calc_physics=True)
+        total_loss = criterion( model, x_next_pred, x_next_train,x_curr_train,calc_physics=True)
         
         # Backpropagation
         optimizer.zero_grad()

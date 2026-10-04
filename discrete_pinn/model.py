@@ -51,27 +51,25 @@ class LogisticPINN (PINN):
 class HenonPINN(PINN):
     def __init__(self, n_hidden, a_init: float, b_init: float):
         # 2 Inputs (x_n, y_n), 2 Outputs (x_n+1, y_n+1)
-        super().__init__(n_input=2, n_hidden=n_hidden, n_output=2)
+        super().__init__(n_input=2, n_hidden=n_hidden, n_output=1)
         self.a = nn.Parameter(torch.tensor([a_init], dtype=torch.float32))
         self.b = nn.Parameter(torch.tensor([b_init], dtype=torch.float32))
         
     def get_physics_residual(self, current_state, next_state_pred):
         # Slice the 2D state into x and y components
         x_n = current_state[:, 0:1]
-        y_n = current_state[:, 1:2]
+        x_prev = current_state[:, 1:2]
+
+        x_next_pred = next_state_pred
         
-        x_next_pred = next_state_pred[:, 0:1]
-        y_next_pred = next_state_pred[:, 1:2]
-        
-        # Eq 1: x_{n+1} = 1 - a * x_n^2 + y_n
-        eq1_res = x_next_pred - (1.0 - self.a * (x_n ** 2) + y_n)
+        # Eq 1: x_{n+1} - 1 + a * x_n^2 - y_n = 0
+        eq_res = x_next_pred - (1.0 - self.a * (x_n ** 2) + self.b*x_prev)
         
         # Eq 2: y_{n+1} = b * x_n
-        eq2_res = y_next_pred - (self.b * x_n)
+        # eq2_res = y_next_pred - (self.b * x_n)
         
         # Return combined residuals
-        return torch.cat([eq1_res, eq2_res], dim=1)
-
+        return eq_res
     
 class LossCalc(nn.Module):
     def __init__(self):
