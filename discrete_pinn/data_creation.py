@@ -5,6 +5,8 @@ from pathlib import Path
 import pandas as pd
 import os
 
+from data_setup import create_delay_embedding 
+
 
 
 class MapFunction:
@@ -25,7 +27,10 @@ class MapFunction:
         Argument : map_function (ex: logistic_map)
 
         Process: Run the system for 500 iters, plot the 600 iters (steady_steps)
-        """
+       
+        Return:  Vector of Map time series (N_timestep,2) , Scalar of N_timestep
+        
+          """
 
         if map_function == "logistic_map":
 
@@ -160,7 +165,12 @@ class MapFunction:
 
     def make_data_splits(self,train_ratio=0.6):
 
-        """Convert a trajectory into chronological train, validation, and test pairs."""
+        """Convert a trajectory into chronological train, 
+        validation, and test pairs.
+
+        Logistic Map : (N_timestep, 1)
+        Henon Map : (N_timestep,2)
+        """
         if self.trajectory is None:
                     raise ValueError ("No trajectory Found !!")
         
@@ -240,4 +250,23 @@ class MapFunction:
         # print(f"Hierarchical data successfully saved to {excel_file_output.resolve()}")
         return df_hierarchical
 
-                    
+
+if __name__ == "__main__":
+    import numpy as np
+
+    map_data = MapFunction()
+
+
+    henon_traj, henon_time = map_data.run_trajectory("henon_map", steady_step=100)
+    print("--- Hénon Map ---")
+    print(f"Trajectory shape: {henon_traj.shape}")
+    #--- Hénon Map X state---
+    #Trajectory shape: (100, 2)
+    #
+
+    henon_input, henon_target = create_delay_embedding(henon_traj) 
+    # henon_input[:,0:1] = X_n   (,1)
+    # henon_input[:,1:2] = X_n-1 (,1)
+    # henon_target[:,:] = X_n+1  (,)
+
+    

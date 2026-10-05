@@ -24,7 +24,7 @@ class PINN (nn.Module):
         
         self.net = nn.Sequential(
             nn.Linear(n_input,n_hidden), nn.Tanh(),
-            nn.Linear(n_hidden, n_hidden), nn.Tanh(),
+            # nn.Linear(n_hidden, n_hidden), nn.Tanh(),
             nn.Linear(n_hidden, n_output)
         )
 
@@ -56,19 +56,15 @@ class HenonPINN(PINN):
         self.b = nn.Parameter(torch.tensor([b_init], dtype=torch.float32))
         
     def get_physics_residual(self, current_state, next_state_pred):
-        # Slice the 2D state into x and y components
+
+        # current_state shape: [batch, 2] -> [x_n, x_{n-1}]
         x_n = current_state[:, 0:1]
         x_prev = current_state[:, 1:2]
-
         x_next_pred = next_state_pred
-        
-        # Eq 1: x_{n+1} - 1 + a * x_n^2 - y_n = 0
-        eq_res = x_next_pred - (1.0 - self.a * (x_n ** 2) + self.b*x_prev)
-        
-        # Eq 2: y_{n+1} = b * x_n
-        # eq2_res = y_next_pred - (self.b * x_n)
-        
-        # Return combined residuals
+
+       # 1D Delay Embedding Residual: x_{n+1} - (1 - a * x_n^2 + b * x_{n-1}) = 0
+        eq_res = x_next_pred - (1.0 - self.a * (x_n**2) + self.b * x_prev)
+      
         return eq_res
     
 class LossCalc(nn.Module):
@@ -76,7 +72,11 @@ class LossCalc(nn.Module):
         super().__init__()
         self.mse = nn.MSELoss()
 
-    def forward(self, model:PINN,  x_next_pred: torch.Tensor, x_next_true: torch.Tensor,x_current = True, calc_physics=True):
+    def forward(self, model:PINN,
+                 x_next_pred: torch.Tensor,
+                 x_next_true: torch.Tensor,
+                 x_current = True, 
+                 calc_physics=True):
             
         # 1. Supervised Data Loss: Fit observed transitions
         data_loss = self.mse(x_next_pred, x_next_true)

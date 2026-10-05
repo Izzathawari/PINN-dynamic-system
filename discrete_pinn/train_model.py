@@ -87,16 +87,23 @@ def train(map_func : str):
             henon_trajectory, timestep = map_data.run_trajectory("henon_map")
             model = HenonPINN(n_hidden= 8, a_init=0.9 , b_init=0.7)
 
-            x_timeseries = henon_trajectory[:,0:1]
 
-            split_idx = int(len(x_timeseries) * 0.8)
-            train_series = x_timeseries[:split_idx]
-            test_series = x_timeseries[split_idx:]
+            
+            x_state_input, x_state_target = create_delay_embedding(henon_trajectory) 
+            # Convert NumPy arrays to PyTorch Tensors
+            x_state_input = torch.tensor(x_state_input, dtype=torch.float32)  # [N, 2] -> (x_n, x_{n-1})
+            x_state_target = torch.tensor(x_state_target, dtype=torch.float32).unsqueeze(1)  # [N, 1] -> x_{n+1}
 
-            x_curr_train, x_next_train = create_delay_embedding(train_series)
-            x_curr_test, x_next_test = create_delay_embedding(test_series)
-    
-            test_data = (x_curr_test, x_next_test)
+            split_idx = int(len(henon_trajectory) * 0.8)
+            x_curr_train = x_state_input[:split_idx]
+            x_curr_test = x_state_input[split_idx:]
+
+            x_next_true_train = x_state_target[:split_idx]
+            x_next_true_test = x_state_target[split_idx:]
+
+            test_data = (x_curr_test, x_next_true_test)
+
+           
 
 
     # Instantiate Model, Loss, and Optimizer
@@ -105,8 +112,8 @@ def train(map_func : str):
     criterion = LossCalc()
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
     
-    epochs = 500
-    pbar = tqdm(range(epochs), desc="Training PINN")
+    epochs = 1000
+    pbar = tqdm(range(epochs), desc=f"Training {map_func}PINN")
     
     for epoch in pbar:
         model.train()
@@ -115,7 +122,7 @@ def train(map_func : str):
         x_next_pred = model(x_curr_train)
         
         # Compute combined loss
-        total_loss = criterion( model, x_next_pred, x_next_train,x_curr_train,calc_physics=True)
+        total_loss = criterion( model, x_next_pred, x_next_true_train,x_curr_train,calc_physics=True)
         
         # Backpropagation
         optimizer.zero_grad()
@@ -136,7 +143,7 @@ def train(map_func : str):
         
 
     test_loss, x_next_pred = evaluate(model, criterion, test_data)
-    plot_predictions(x_next_pred,x_next_test)
+    plot_predictions(x_next_pred,x_next_true_test)
     print(f"Test loss: {test_loss:.5f}")
     print("Discovered Parameters:")
     for name, param in model.named_parameters():
