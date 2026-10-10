@@ -21,7 +21,7 @@ def evaluate(model, criterion, data):
     return loss.item(), x_next_pred
 
 
-def plot_predictions(pred_data,true_data, save_filename="output_dir/pinn_predictions.png"):
+def plot_predictions(param_hist, pred_data,true_data, save_filename="output_dir/pinn_predictions.png"):
 
     if not (Path(save_filename)):
         print(f"Error: The path '{save_filename}' does not exist.")
@@ -30,6 +30,8 @@ def plot_predictions(pred_data,true_data, save_filename="output_dir/pinn_predict
     # Convert PyTorch tensors to NumPy arrays for Matplotlib
     pred_data = pred_data.squeeze().detach().cpu().numpy()
     true_data = true_data.squeeze().detach().cpu().numpy()
+
+    #--------------------------------#
 
     plt.figure(figsize=(10, 5))
     plt.title("PINN Predictions - Test Phase")
@@ -56,6 +58,27 @@ def plot_predictions(pred_data,true_data, save_filename="output_dir/pinn_predict
     output_path = Path(save_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path, dpi=150)
+
+    #--------------------------------#
+    fig,ax = plt.subplots(2,1, figsize=(9, 6))
+    ax[0].plot(param_hist["a"], label="Learned $a$", color="tab:blue", lw=2)
+    ax[0].axhline(y=1.4, color="tab:blue", linestyle="--", alpha=0.7, label="True $a$ (1.4)")
+    ax[0].set_title("PINN Parameter $a$ and $b$ Convergence")
+    ax[0].set_ylabel("Parameter $a$")
+    ax[0].grid(True, linestyle="--", alpha=0.3)
+
+    ax[1].plot(param_hist["b"], label="Learned $b$", color="tab:blue", lw=2)
+    ax[1].axhline(y=0.3, color="tab:blue", linestyle="--", alpha=0.7, label="True $a$ (1.4)")
+    ax[1].set_title("PINN Parameter $b$ Convergence")
+    ax[1].set_xlabel("Training Epoch ($\times 10$)")
+    ax[1].set_ylabel("Parameter $b$")
+    ax[1].grid(True, linestyle="--", alpha=0.3)
+
+
+
+    output_path = Path(save_filename)
+    plt.savefig(output_path.parent / "system parameter.png", dpi=150)
+    plt.close()
     
     # Optional: Display the plot in the window before closing
     plt.show() 
@@ -85,6 +108,8 @@ def train(map_func : str):
         case "henon_map":
             map_data = MapFunction()
             henon_trajectory, timestep = map_data.run_trajectory("henon_map")
+            print(f"Henon_full data:")
+            print(f"{henon_trajectory[:5]}")
             model = HenonPINN(n_hidden= 8, a_init=0.9 , b_init=0.7)
 
 
@@ -95,7 +120,9 @@ def train(map_func : str):
             x_state_target = torch.tensor(x_state_target, dtype=torch.float32).unsqueeze(1)  # [N, 1] -> x_{n+1}
 
             split_idx = int(len(henon_trajectory) * 0.8)
-            x_curr_train = x_state_input[:split_idx]
+            x_curr_train = x_state_input[:split_idx]  # [N, 2] -> (x_n, x_{n-1})
+            print(f"X_input for training :")    
+            print(f"{x_curr_train[:5]}")              # [N, 1] -> x_{n+1}
             x_curr_test = x_state_input[split_idx:]
 
             x_next_true_train = x_state_target[:split_idx]
@@ -114,12 +141,14 @@ def train(map_func : str):
     
     epochs = 1000
     pbar = tqdm(range(epochs), desc=f"Training {map_func}PINN")
+
+    param_history = {"a": [], "b": []}
     
     for epoch in pbar:
         model.train()
         
-        # Forward pass: predict x_{n+1} from x_n
-        x_next_pred = model(x_curr_train)
+        # Forward pass: predict x_{n+1} from x_n, x_{n-1}
+        x_next_pred = model(x_curr_train) 
         
         # Compute combined loss
         total_loss = criterion( model, x_next_pred, x_next_true_train,x_curr_train,calc_physics=True)
@@ -129,7 +158,12 @@ def train(map_func : str):
         total_loss.backward()
         optimizer.step()
         
-        if epoch % 100 == 0:
+        if epoch % 10 == 0:
+
+           
+            for name, param in model.named_parameters():
+                if name in ["a", "b"]:
+                    param_history[name].append(param.item())
             
             postfix_dict = {"Loss": f"{total_loss.item():.5f}"}
             
@@ -143,7 +177,7 @@ def train(map_func : str):
         
 
     test_loss, x_next_pred = evaluate(model, criterion, test_data)
-    plot_predictions(x_next_pred,x_next_true_test)
+    plot_predictions(param_history,x_next_pred,x_next_true_test)
     print(f"Test loss: {test_loss:.5f}")
     print("Discovered Parameters:")
     for name, param in model.named_parameters():

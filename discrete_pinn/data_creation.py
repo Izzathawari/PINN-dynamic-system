@@ -22,7 +22,7 @@ class MapFunction:
     def henon_map (self, state_x, state_y,a,b):
          return 1-a*state_x**2 + state_y, b*state_x
 
-    def run_trajectory(self, map_function, transient_step= 500, steady_step=100):
+    def run_trajectory(self, map_function, transient_step= 300, steady_step=1000):
         """
         Argument : map_function (ex: logistic_map)
 
@@ -33,6 +33,11 @@ class MapFunction:
           """
 
         if map_function == "logistic_map":
+            """
+            Return:
+            (N,1) -> (x_state)
+    
+            """
 
             state_x = 0.2
             self.alpha = 3.99
@@ -50,6 +55,11 @@ class MapFunction:
             return self.trajectory, np.arange(0,steady_step,1)
 
         if map_function == "henon_map":
+            """
+            Return:
+            (N,2) -> (x_state , y_state)
+
+            """
 
             state_x = 0.1
             state_y = 0.1

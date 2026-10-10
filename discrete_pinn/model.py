@@ -63,6 +63,7 @@ class HenonPINN(PINN):
         x_next_pred = next_state_pred
 
        # 1D Delay Embedding Residual: x_{n+1} - (1 - a * x_n^2 + b * x_{n-1}) = 0
+       # Uses true data of x_n and x_{n-1}
         eq_res = x_next_pred - (1.0 - self.a * (x_n**2) + self.b * x_prev)
       
         return eq_res
