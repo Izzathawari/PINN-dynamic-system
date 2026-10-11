@@ -3,11 +3,11 @@ import numpy as np
 
 def create_delay_embedding(data, delay = 1):
     """
-    Given 1D numpy array x_series of shape (L, 1):
+    Given 1D numpy array x_series of shape (N, 1):
 
     Returns:
-      x_input:  shape (L-2, 2) containing [x_n, x_{n-1}]
-      x_target: shape (L-2, 1) containing x_{n+1}
+      x_input:  shape (N, 2) containing [x_n, x_{n-1}]
+      x_target: shape (N, 1) containing x_{n+1}
 
     
     Delay Embedding Sequence Tally Layout

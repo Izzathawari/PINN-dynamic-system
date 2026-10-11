@@ -139,7 +139,7 @@ def train(map_func : str):
     criterion = LossCalc()
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
     
-    epochs = 1000
+    epochs = 3000
     pbar = tqdm(range(epochs), desc=f"Training {map_func}PINN")
 
     param_history = {"a": [], "b": []}

@@ -22,7 +22,7 @@ class MapFunction:
     def henon_map (self, state_x, state_y,a,b):
          return 1-a*state_x**2 + state_y, b*state_x
 
-    def run_trajectory(self, map_function, transient_step= 300, steady_step=1000):
+    def run_trajectory(self, map_function, transient_step= 300, steady_step=5000):
         """
         Argument : map_function (ex: logistic_map)
 
@@ -173,7 +173,7 @@ class MapFunction:
             fig.savefig(save_filename, bbox_inches="tight")
             plt.close(fig)
 
-    def make_data_splits(self,train_ratio=0.6):
+    def make_data_splits(self,train_ratio=0.8):
 
         """Convert a trajectory into chronological train, 
         validation, and test pairs.
@@ -206,58 +206,57 @@ class MapFunction:
 
     def convert_data2pd(self,output_dir="output_dir/"):
         """
-        Converts PyTorch data splits into a hierarchical two-level Excel format:
-        Top header:    [      Train      ] [   Validation    ] [      Test       ]
-        Sub header:    [  x_n  |  x_n+1  ] [  x_n  |  x_n+1  ] [  x_n  |  x_n+1  ]
+        Converts delay-embedded data splits into a hierarchical two-level Excel format:
+        Returns:
+            Top header:    [         Train          ] [           Test           ]
+            Sub header:    [ x_{n-1} | x_n | x_{n+1} ] [ x_{n-1} | x_n | x_{n+1} ]
         """
-    
+        if self.trajectory is None:
+            raise ValueError("No trajectory found!")
 
-        train_data, test_data = self.make_data_splits()
-        print(f"Train data / Test Data {np.shape(train_data)}")
+        # 1. Extract 1D series from trajectory (take column 0 if 2D Hénon map)
+        if self.trajectory.ndim == 2:
+            x_series = self.trajectory[:, 0:1]
+        else:
+            x_series = self.trajectory[:, np.newaxis]
 
-        splits = {
-            "Train": train_data,
-            "Test": test_data
-        }
+        # 2. Generate delay embedding (inputs: [x_n, x_{n-1}], target: x_{n+1})
+        x_input, x_target = create_delay_embedding(x_series)
 
-        split_dfs = {}
-        for name, (x_curr, x_next) in splits.items():
-            curr_arr = x_curr.squeeze().detach().cpu().numpy()
-            next_arr = x_next.squeeze().detach().cpu().numpy()
+        # Reorder/Combine columns so they appear logically as [x_{n-1}, x_n, x_{n+1}]
+        # x_input[:, 0] is x_n, x_input[:, 1] is x_{n-1}
+        x_prev = x_input[:, 1:2]  # x_{n-1}       , shape (N,1)
+        x_curr = x_input[:, 0:1]  # x_n           , shape (N,1)
+        x_next = x_target.reshape(-1,1)# x_{n+1}  , shape (N,1)
 
-            # Check if the data is 1D (Logistic) or 2D (Hénon)
-            if curr_arr.ndim == 1:
-                function_name = "logistic_map"
-                split_dfs[name] = pd.DataFrame({
-                    "x_n": curr_arr,
-                    "x_n+1": next_arr
-                })
+        full_data = np.hstack([x_prev, x_curr, x_next])  # Shape [N, 3]
 
-            else:
-                function_name = "henon_map"
-                # For 2D Hénon map, create separate x and y columns
-                df_curr = pd.DataFrame(curr_arr, columns=["x_n", "y_n"])
-                df_next = pd.DataFrame(next_arr, columns=["x_n+1", "y_n+1"])
-                # Combine them side-by-side
-                split_dfs[name] = pd.concat([df_curr, df_next], axis=1)
-            
-                # Build individual 2-column DataFrame per split
-                split_dfs[name] = pd.concat([df_curr, df_next], axis=1)
-                
-        # Concatenate side-by-side using keys to form 2-level column headers
-        df_hierarchical = pd.concat(split_dfs, axis=1)
+        # 3. Chronological Train/Test Split (80% Train, 20% Test)
+        n_samples = len(full_data)
+        train_end = int(0.8 * n_samples)
 
-        # Path resolution and auto-folder creation
-        # excel_dir = Path(output_dir)
-        # excel_dir.parent.mkdir(parents=True, exist_ok=True)
-        # excel_file_output = os.path.join(output_dir , "dataset_" , function_name)
-        
+        train_arr = full_data[:train_end]
+        test_arr = full_data[train_end:]
 
-        # Write to Excel (index=True shows step row numbers 0, 1, 2, ...)
-        with pd.ExcelWriter("output_dir/dataset_split_map.xlsx", engine="openpyxl") as writer:
-            df_hierarchical.to_excel(writer,index=True)
+        col_names = ["x_{n-1}", "x_n", "x_{n+1}"]
 
-        # print(f"Hierarchical data successfully saved to {excel_file_output.resolve()}")
+        df_train = pd.DataFrame(train_arr, columns=col_names)
+        df_test = pd.DataFrame(test_arr, columns=col_names)
+
+        splits = {"Train": df_train, "Test": df_test}
+
+        # Concatenate side-by-side to form 2-level column headers
+        df_hierarchical = pd.concat(splits, axis=1)
+
+        # 4. Save to Excel
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        excel_file = output_path / "dataset_split_delay_embedding.xlsx"
+
+        with pd.ExcelWriter(excel_file, engine="openpyxl") as writer:
+            df_hierarchical.to_excel(writer, index=True)
+
+        print(f"Hierarchical delay-embedded data saved to: {excel_file.resolve()}")
         return df_hierarchical
 
 
@@ -279,4 +278,5 @@ if __name__ == "__main__":
     # henon_input[:,1:2] = X_n-1 (,1)
     # henon_target[:,:] = X_n+1  (,)
 
+    map_data.convert_data2pd()
     
