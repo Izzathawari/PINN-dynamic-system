@@ -22,7 +22,7 @@ class MapFunction:
     def henon_map (self, state_x, state_y,a,b):
          return 1-a*state_x**2 + state_y, b*state_x
 
-    def run_trajectory(self, map_function, transient_step= 300, steady_step=5000):
+    def run_trajectory(self, map_function, transient_step= 1000, steady_step=5000):
         """
         Argument : map_function (ex: logistic_map)
 
