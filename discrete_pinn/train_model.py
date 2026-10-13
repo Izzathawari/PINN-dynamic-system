@@ -61,14 +61,14 @@ def plot_predictions(param_hist, pred_data,true_data, save_filename="output_dir/
 
     #--------------------------------#
     fig,ax = plt.subplots(2,1, figsize=(9, 6))
-    ax[0].plot(param_hist["a"], label="Learned $a$", color="tab:blue", lw=2)
-    ax[0].axhline(y=1.4, color="tab:blue", linestyle="--", alpha=0.7, label="True $a$ (1.4)")
+    ax[0].plot(param_hist["a"], label="Learned $a$", color="k", lw=2)
+    ax[0].axhline(y=1.4, color="r", linestyle="--", alpha=0.7, label="True $a$ (1.4)")
     ax[0].set_title("PINN Parameter $a$ and $b$ Convergence")
     ax[0].set_ylabel("Parameter $a$")
     ax[0].grid(True, linestyle="--", alpha=0.3)
 
-    ax[1].plot(param_hist["b"], label="Learned $b$", color="tab:blue", lw=2)
-    ax[1].axhline(y=0.3, color="tab:blue", linestyle="--", alpha=0.7, label="True $a$ (1.4)")
+    ax[1].plot(param_hist["b"], label="Learned $b$", color="k", lw=2)
+    ax[1].axhline(y=0.3, color="r", linestyle="--", alpha=0.7, label="True $a$ (1.4)")
     ax[1].set_title("PINN Parameter $b$ Convergence")
     ax[1].set_xlabel("Training Epoch ($\times 10$)")
     ax[1].set_ylabel("Parameter $b$")
@@ -139,7 +139,7 @@ def train(map_func : str):
     criterion = LossCalc()
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
     
-    epochs = 3000
+    epochs = 1000
     pbar = tqdm(range(epochs), desc=f"Training {map_func}PINN")
 
     param_history = {"a": [], "b": []}
