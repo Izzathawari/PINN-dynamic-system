@@ -24,7 +24,8 @@ class MapFunction:
 
     def run_trajectory(self, map_function, transient_step= 1000, steady_step=5000):
         """
-        Argument : map_function (ex: logistic_map)
+        Argument :
+        map_function (ex: logistic_map)
 
         Process: Run the system for 500 iters, plot the 600 iters (steady_steps)
        
@@ -38,14 +39,9 @@ class MapFunction:
             (N,1) -> (x_state)
     
             """
-            # Parameters
-            mean = 0.0
-            std_dev = 1.0  # Standard deviation (controls noise power/amplitude)
+    
 
-            # Generate White Gaussian Noise
-            white_noise = np.random.normal(mean, std_dev, steady_step)
-
-            state_x = 0.2
+            state_x = 0.8
             self.alpha = 3.99
             # Discard transient iterations
             for _ in range(transient_step):
@@ -57,7 +53,16 @@ class MapFunction:
                 state_x = self.logistic_map(state_x)
                 data.append(state_x)
 
-            self.trajectory = np.array(data) + white_noise
+
+            # ---  Add White Gaussian Noise (Measurement Noise) ---
+            # eta = 0.2
+            # sigma_logistic_map = np.std(data)
+            # sigma =eta*sigma_logistic_map
+            # mean = 0
+            # white_noise = np.random.normal(mean, sigma, steady_step)
+            # ------------------------------------------------------
+
+            self.trajectory = np.array(data)
             return self.trajectory, np.arange(0,steady_step,1)
 
         if map_function == "henon_map":

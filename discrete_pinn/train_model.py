@@ -102,6 +102,7 @@ def train(map_func : str):
             x_trajectory, timestep = map_data.run_trajectory("logistic_map")
             model = LogisticPINN(n_hidden= 8, r_init=1.99)
             train_data, test_data = map_data.make_data_splits( )
+            print(f"{"-"*5}{map_func} data are created{"-"*5}")
             x_curr_train, x_next_train = train_data
             x_curr_test, x_next_test = test_data
             x_next_true_train = x_next_train
@@ -141,7 +142,7 @@ def train(map_func : str):
     criterion = LossCalc()
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
     
-    epochs = 1000
+    epochs = 3000
     pbar = tqdm(range(epochs), desc=f"Training {map_func}PINN")
 
     param_history = {"a": [], "b": []}
