@@ -85,8 +85,7 @@ class LossCalc(nn.Module):
         # 2. Discrete Physics Residual: Algebraic recurrence relation
         # Physcis loss takes x_next_pred and x_current_pred, it should uses prediction data entirely
         if calc_physics:
-            # The loss function doesn't need to know the formula, 
-            # it just asks the model to compute its own residual!
+            
             physics_residual = model.get_physics_residual(x_current, x_next_pred)
             physics_loss = torch.mean(physics_residual ** 2)
             

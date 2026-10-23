@@ -20,7 +20,7 @@ def main ():
     # print(x_curr_train)
 
     #--------------------------------------#
-    train("henon_map")
+    train("logistic_map")
 
 
 if __name__ == "__main__":

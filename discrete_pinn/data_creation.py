@@ -38,6 +38,12 @@ class MapFunction:
             (N,1) -> (x_state)
     
             """
+            # Parameters
+            mean = 0.0
+            std_dev = 1.0  # Standard deviation (controls noise power/amplitude)
+
+            # Generate White Gaussian Noise
+            white_noise = np.random.normal(mean, std_dev, steady_step)
 
             state_x = 0.2
             self.alpha = 3.99
@@ -51,7 +57,7 @@ class MapFunction:
                 state_x = self.logistic_map(state_x)
                 data.append(state_x)
 
-            self.trajectory = np.array(data)
+            self.trajectory = np.array(data) + white_noise
             return self.trajectory, np.arange(0,steady_step,1)
 
         if map_function == "henon_map":
@@ -195,7 +201,6 @@ class MapFunction:
             
         n_samples = len(x_current)
         train_end = int(train_ratio * n_samples)
-        print(f"Train End index : {train_end}")
 
 
         return (

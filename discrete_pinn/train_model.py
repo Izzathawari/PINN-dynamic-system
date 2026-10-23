@@ -40,15 +40,15 @@ def plot_predictions(param_hist, pred_data,true_data, save_filename="output_dir/
 
     if pred_data.ndim == 1:
         # Logistic Map: Plot a single X variable
-        plt.plot(true_data, label="True Data", color="tab:blue", lw=2)
-        plt.plot(pred_data, '--', label="NN Prediction", color="tab:orange", lw=2)
+        plt.plot(true_data, label="True Data", color="black", lw=2)
+        plt.plot(pred_data,  label="NN Prediction", color="tab:red", lw=2)
     else:
         # Hénon Map: Plot both X (column 0) and Y (column 1) separately
-        plt.plot(true_data[:, 0], label="True X", color="tab:blue", lw=2)
-        plt.plot(pred_data[:, 0], '--', label="Pred X", color="tab:cyan", lw=2)
+        plt.plot(true_data[:, 0], label="True X", color="black", lw=2)
+        plt.plot(pred_data[:, 0],  label="Pred X", color="tab:red", lw=2)
         
-        plt.plot(true_data[:, 1], label="True Y", color="tab:orange", lw=2)
-        plt.plot(pred_data[:, 1], '--', label="Pred Y", color="tab:red", lw=2)
+        plt.plot(true_data[:, 1], label="True Y", color="black", lw=2)
+        plt.plot(pred_data[:, 1],  label="Pred Y", color="tab:red", lw=2)
 
     
     plt.grid(True, linestyle="--", alpha=0.2)
@@ -104,6 +104,8 @@ def train(map_func : str):
             train_data, test_data = map_data.make_data_splits( )
             x_curr_train, x_next_train = train_data
             x_curr_test, x_next_test = test_data
+            x_next_true_train = x_next_train
+            x_next_true_test = x_next_test
 
         case "henon_map":
             map_data = MapFunction()
