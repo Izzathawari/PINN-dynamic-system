@@ -65,6 +65,40 @@ class MapFunction:
             self.trajectory = np.array(data)
             return self.trajectory, np.arange(0,steady_step,1)
 
+        if map_function == "logistic_map_with_noise":
+            """
+            Return:
+            (N,1) -> (x_state)
+    
+            """
+    
+
+            state_x = 0.8
+            self.alpha = 3.99
+            # Discard transient iterations
+            for _ in range(transient_step):
+                state_x = self.logistic_map(state_x)
+                
+            # Collect steady-state / attractor values
+            time_series_data  = []
+            for _ in range(steady_step):
+                state_x = self.logistic_map(state_x)
+                time_series_data.append(state_x)
+
+            # --- 2. Apply the Paper's Noise Formula ---
+            eta = 0.03  # 3% noise-to-signal ratio
+            sigma_x = np.std(time_series_data)  # Standard deviation of the clean signal
+            sigma_noise = eta * sigma_x  # Scaled noise standard deviation
+
+            # Generate white noise using the paper's formula
+            white_noise = np.random.normal(loc=0.0, scale=sigma_noise, size=len(steady_step))
+
+            # Construct noisy time series s(k)
+            noisy_data = time_series_data + white_noise
+
+            self.trajectory = np.array(noisy_data)
+            return self.trajectory, np.arange(0,steady_step,1)
+
         if map_function == "henon_map":
             """
             Return:
