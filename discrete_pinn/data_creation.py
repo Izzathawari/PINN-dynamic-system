@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import pandas as pd
 import os
+import scipy.stats as stats
+
 
 from data_setup import create_delay_embedding 
 
@@ -54,14 +56,6 @@ class MapFunction:
                 data.append(state_x)
 
 
-            # ---  Add White Gaussian Noise (Measurement Noise) ---
-            # eta = 0.2
-            # sigma_logistic_map = np.std(data)
-            # sigma =eta*sigma_logistic_map
-            # mean = 0
-            # white_noise = np.random.normal(mean, sigma, steady_step)
-            # ------------------------------------------------------
-
             self.trajectory = np.array(data)
             return self.trajectory, np.arange(0,steady_step,1)
 
@@ -86,12 +80,12 @@ class MapFunction:
                 time_series_data.append(state_x)
 
             # --- 2. Apply the Paper's Noise Formula ---
-            eta = 0.03  # 3% noise-to-signal ratio
+            eta = 0.05  # Signal Noise Ratio %
             sigma_x = np.std(time_series_data)  # Standard deviation of the clean signal
             sigma_noise = eta * sigma_x  # Scaled noise standard deviation
 
             # Generate white noise using the paper's formula
-            white_noise = np.random.normal(loc=0.0, scale=sigma_noise, size=len(steady_step))
+            white_noise = np.random.normal(loc=0.0, scale=sigma_noise, size=len(time_series_data))
 
             # Construct noisy time series s(k)
             noisy_data = time_series_data + white_noise
@@ -225,6 +219,9 @@ class MapFunction:
 
         Logistic Map : (N_timestep, 1)
         Henon Map : (N_timestep,2)
+
+        Returns:
+            Train_data, Test_data : (N,1),(N,1)
         """
         if self.trajectory is None:
                     raise ValueError ("No trajectory Found !!")
@@ -308,19 +305,82 @@ if __name__ == "__main__":
     import numpy as np
 
     map_data = MapFunction()
+    logistic_map, _ = map_data.run_trajectory("logistic_map")
 
+    map_data2 = MapFunction()
+    logistic_map_noisy, _ = map_data2.run_trajectory("logistic_map_with_noise")
 
-    henon_traj, henon_time = map_data.run_trajectory("henon_map", steady_step=100)
-    print("--- Hénon Map ---")
-    print(f"Trajectory shape: {henon_traj.shape}")
-    #--- Hénon Map X state---
-    #Trajectory shape: (100, 2)
-    #
-
-    henon_input, henon_target = create_delay_embedding(henon_traj) 
-    # henon_input[:,0:1] = X_n   (,1)
-    # henon_input[:,1:2] = X_n-1 (,1)
-    # henon_target[:,:] = X_n+1  (,)
-
-    map_data.convert_data2pd()
+    plt.figure(figsize=(8, 6))
+    plt.plot(logistic_map[:-1],
+        logistic_map[1:],
+        ".",
+        color="tab:blue",
+        alpha=0.6,
+        label="Clean",)
     
+    plt.plot(
+        logistic_map_noisy[:-1],
+        logistic_map_noisy[1:],
+        ".",
+        color="tab:red",
+        alpha=0.6,
+        label="Noisy",)
+    plt.xlabel(r"$x_n$")
+    plt.ylabel(r"$x_{n+1}$")
+    plt.title("Logistic Map Phase Plot")
+    plt.grid(True, linestyle="--")
+    plt.legend()
+    plt.tight_layout()
+    
+    
+    plt.figure(figsize=(8, 5), dpi=150)
+    count, bins, ignored = plt.hist(logistic_map, bins=100, density=True, alpha=0.6, color="black", label="Clean")
+    count, bins, ignored = plt.hist(logistic_map_noisy, bins=100, density=True, alpha=0.6, color="blue", label="Noisy")
+
+    x_pdf = np.linspace(0.001, 0.999, 500)
+    logistic_pdf = 1.0 / (np.pi * np.sqrt(x_pdf * (1.0 - x_pdf)))
+
+    plt.plot(
+        x_pdf,
+        logistic_pdf,
+        "r-",
+        linewidth=2.5,
+        label="Theoretical Logistic PDF ($r=4$)"
+    )
+
+
+
+    extracted_noise = logistic_map_noisy - logistic_map
+    sigma_actual = np.std(extracted_noise)
+    mean_noise= np.mean(extracted_noise)
+    print(f"Mean : {mean_noise} , Std Dev: {sigma_actual}")
+    plt.figure(figsize=(9, 5), dpi=150)
+    count, bins, ignored = plt.hist(
+        extracted_noise,
+        bins=60,
+        density=True,
+        alpha=0.6,
+        color="black",
+        label="Empirical Added Noise",
+    )
+
+    # 3. Plot the Correct Theoretical Gaussian PDF
+    xmin, xmax = plt.xlim()
+    x = np.linspace(xmin, xmax, 100)
+    # Use mean = 0 and scale = sigma_actual (derived from your eta * sigma_x formula)
+    p = stats.norm.pdf(x, loc=0.0, scale=sigma_actual)
+
+    plt.plot(
+        x,
+        p,
+        "r-",
+        linewidth=2.5,
+        label=f"Theoretical $\mathcal{{N}}(0, \sigma^2)$ ($\sigma$={sigma_actual:.4f})",
+    )
+
+    plt.title("Verification of Additive White Gaussian Noise", fontsize=13)
+    plt.xlabel("Noise Magnitude", fontsize=12)
+    plt.ylabel("Density", fontsize=12)
+    plt.legend(loc="upper right")
+    plt.grid(True, linestyle="--", alpha=0.3)
+    plt.show()

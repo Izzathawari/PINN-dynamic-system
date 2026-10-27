@@ -99,18 +99,39 @@ def train(map_func : str):
     match map_func:
         case "logistic_map":
             map_data = MapFunction()
-            x_trajectory, timestep = map_data.run_trajectory("logistic_map")
+            x_trajectory, timestep = map_data.run_trajectory(map_func)
             model = LogisticPINN(n_hidden= 8, r_init=1.99)
-            train_data, test_data = map_data.make_data_splits( )
+            train_data, test_data = map_data.make_data_splits()
             print(f"{"-"*5}{map_func} data are created{"-"*5}")
-            x_curr_train, x_next_train = train_data
-            x_curr_test, x_next_test = test_data
-            x_next_true_train = x_next_train
-            x_next_true_test = x_next_test
+            x_curr_train, x_next_true_train = train_data
+            x_curr_test, x_next_true_test = test_data
+            
+
+        case "logistic_map_with_noise":
+
+            #----------Noisy Data----------------
+            map_data = MapFunction()
+            noisy_trajectory, timestep = map_data.run_trajectory("logistic_map_with_noise")
+            train_data, test_data = map_data.make_data_splits()
+            x_curr_train, x_next_true_train = train_data
+            x_curr_test, x_next_true_test = test_data
+            print(f"\n{"-"*5} Noisy Data Logistic Map Prepared {"-"*5}")
+
+            #----------Clean Data----------------
+            map_data_true = MapFunction()
+            true_trajectory, timestep = map_data_true.run_trajectory("logistic_map")
+            train_data_clean, test_data_clean = map_data_true.make_data_splits()
+            x_curr_train_clean, x_next_true_train_clean = train_data_clean
+            x_curr_test_clean, x_next_true_test_clean = test_data_clean
+            print(f"\n{"-"*5} Clean Data Logistic Map Prepared {"-"*5}")
+
+            model = LogisticPINN(n_hidden= 8, r_init=1.99)
+
+
 
         case "henon_map":
             map_data = MapFunction()
-            henon_trajectory, timestep = map_data.run_trajectory("henon_map")
+            henon_trajectory, timestep = map_data.run_trajectory(map_func)
             print(f"Henon_full data:")
             print(f"{henon_trajectory[:5]}")
             model = HenonPINN(n_hidden= 8, a_init=0.9 , b_init=0.7)
@@ -142,28 +163,43 @@ def train(map_func : str):
     criterion = LossCalc()
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
     
-    epochs = 3000
+    epochs = 1000
     pbar = tqdm(range(epochs), desc=f"Training {map_func}PINN")
 
     param_history = {"a": [], "b": []}
     
     for epoch in pbar:
-        model.train()
-        
-        # Forward pass: predict x_{n+1} from x_n, x_{n-1}
-        x_next_pred = model(x_curr_train) 
-        
-        # Compute combined loss
-        total_loss = criterion( model, x_next_pred, x_next_true_train,x_curr_train,calc_physics=True)
-        
-        # Backpropagation
-        optimizer.zero_grad()
-        total_loss.backward()
-        optimizer.step()
-        
+
+        if map_func == "logistic_map_with_noise":
+
+            model.train()       
+            # Forward pass: predict x_{n+1} from x_n, x_{n-1}
+            x_next_pred = model(x_curr_train) 
+            
+            # Compute combined loss
+            total_loss = criterion( model, x_next_pred, x_next_true_train_clean,x_curr_train,calc_physics=True)
+            
+            # Backpropagation
+            optimizer.zero_grad()
+            total_loss.backward()
+            optimizer.step()
+
+        else:
+            model.train()
+            
+            # Forward pass: predict x_{n+1} from x_n, x_{n-1}
+            x_next_pred = model(x_curr_train) 
+            
+            # Compute combined loss
+            total_loss = criterion( model, x_next_pred, x_next_true_train,x_curr_train,calc_physics=True)
+            
+            # Backpropagation
+            optimizer.zero_grad()
+            total_loss.backward()
+            optimizer.step()
+            
         if epoch % 10 == 0:
 
-           
             for name, param in model.named_parameters():
                 if name in ["a", "b"]:
                     param_history[name].append(param.item())
@@ -178,6 +214,9 @@ def train(map_func : str):
             pbar.set_postfix(postfix_dict)
 
         
+    if map_func == "logistic_map_with_noise":
+        test_data = test_data_clean
+        x_next_true_test = x_next_true_test
 
     test_loss, x_next_pred = evaluate(model, criterion, test_data)
     plot_predictions(param_history,x_next_pred,x_next_true_test)
@@ -188,6 +227,38 @@ def train(map_func : str):
             print(f"  {name} = {param.item():.4f}")
 
 
+    # 1. Convert tensors to NumPy arrays
+    y_true = x_next_true_test.detach().cpu().numpy().flatten()
+    y_pred = x_next_pred.detach().cpu().numpy().flatten()
+
+    # 2. Plot Overlapping Distributions
+    plt.figure(figsize=(8, 5), dpi=150)
+
+    plt.hist(
+        y_true,
+        bins=40,
+        density=True,
+        alpha=0.5,
+        color="blue",
+        label="True Clean Data",
+    )
+    plt.hist(
+        y_pred,
+        bins=40,
+        density=True,
+        alpha=0.5,
+        color="orange",
+        label="PINN Prediction",
+    )
+
+    plt.title(
+        "Attractor Density Distribution: True vs. PINN Predicted", fontsize=14
+    )
+    plt.xlabel("Value ($x_{n+1}$)", fontsize=12)
+    plt.ylabel("Density", fontsize=12)
+    plt.legend(loc="upper right")
+    plt.grid(True, linestyle="--", alpha=0.3)
+    plt.show()
     return model
 
 

@@ -20,7 +20,7 @@ def main ():
     # print(x_curr_train)
 
     #--------------------------------------#
-    train("logistic_map")
+    train("logistic_map_with_noise")
 
 
 if __name__ == "__main__":
