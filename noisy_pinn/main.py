@@ -23,6 +23,7 @@ def create_data():
     sigma_noise = eta * sigma_x  # Scaled noise standard deviation
     print(f"Standard Deviation Clean Signal {sigma_x}")
     print(f"Standard Deviation Noisy Signal {sigma_noise}")
+
     # Generate white noise using the paper's formula
     white_noise = np.random.normal(loc=0.0, scale=sigma_noise, size=len(x_hist))
 
@@ -39,8 +40,9 @@ def run_EKF():
     df = lambda x: r * (1 - 2 * x)
 
     R_meas = np.array([[sigma_noise**2]])
-    Q = np.array([[1e-5]])
-    H = np.array([[1.0]])                      # h(x) = x
+    Q = np.array([[1e-4]])
+    H = np.array([[1.0]])   
+    print(f"Sigma Noise {sigma_noise :.4f}")                   # h(x) = x
 
     ekf = EKF(x0=s_k[0], P0=[[sigma_noise**2]])
     x_est = [s_k[0]]
@@ -58,13 +60,16 @@ def run_EKF():
     print("filtered RMSE:", np.sqrt(np.mean((x_est - x_hist)**2)))
     
     plt.figure(figsize=(7,5))
-    plt.plot(x_est[:-1], x_est[1:], ".",color="red" )
-    plt.plot(x_hist[:-1], x_hist[1:], ".",color="black" )
-    plt.plot(s_k[:-1], s_k[1:],".",color="green" )
+    plt.plot(x_est[:-1], x_est[1:], ".",color="red" , label="EKF estimation")
+    plt.plot(x_hist[:-1], x_hist[1:], ".",color="black", label="True Data" )
+    plt.plot(s_k[:-1], s_k[1:],".",color="green", label="Noisy Data" )
+    plt.legend()
 
     plt.figure(figsize=(10,6))
-    plt.plot(x_est[:50], "o",linestyle = "-",color="red" )
-    plt.plot(x_hist[:50], "o",linestyle = "-",color="black" )
+    plt.plot(x_est[:50], "o",linestyle = "-",color="red", label="EKF estimation" )
+    plt.plot(x_hist[:50], "o",linestyle = "-",color="black", label="True Data" )
+    plt.plot(s_k[:50], "o",linestyle = "-",color="green", label="Noisy Data" )
+    plt.legend()
     plt.show()
     return 0
 
