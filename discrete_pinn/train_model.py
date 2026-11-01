@@ -33,19 +33,19 @@ def plot_predictions(param_hist, pred_data,true_data, save_filename="output_dir/
 
     #--------------------------------#
 
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(7, 4))
     plt.title("PINN Predictions - Test Phase")
     plt.xlabel("Time Step")
     plt.ylabel(r"$State Variable$")
 
     if pred_data.ndim == 1:
         # Logistic Map: Plot a single X variable
-        plt.plot(true_data, label="True Data", color="black", lw=2)
-        plt.plot(pred_data,  label="NN Prediction", color="tab:red", lw=2)
+        plt.plot(true_data[:-1],true_data[1:], '.',label="True Data", color="black", lw=2)
+        plt.plot(pred_data[:-1],pred_data[1:], '.',label="NN Prediction", color="tab:red", lw=2)
     else:
         # Hénon Map: Plot both X (column 0) and Y (column 1) separately
-        plt.plot(true_data[:, 0], label="True X", color="black", lw=2)
-        plt.plot(pred_data[:, 0],  label="Pred X", color="tab:red", lw=2)
+        plt.plot(true_data[:, 0], '.',label="True X", color="black", lw=2)
+        plt.plot(pred_data[:, 0], '.',label="Pred X", color="tab:red", lw=2)
         
         plt.plot(true_data[:, 1], label="True Y", color="black", lw=2)
         plt.plot(pred_data[:, 1],  label="Pred Y", color="tab:red", lw=2)
@@ -177,7 +177,7 @@ def train(map_func : str):
             x_next_pred = model(x_curr_train) 
             
             # Compute combined loss
-            total_loss = criterion( model, x_next_pred, x_next_true_train_clean,x_curr_train,calc_physics=True)
+            total_loss = criterion( model, x_next_pred, x_next_true_train,x_curr_train,calc_physics=True)
             
             # Backpropagation
             optimizer.zero_grad()
@@ -219,46 +219,13 @@ def train(map_func : str):
         x_next_true_test = x_next_true_test
 
     test_loss, x_next_pred = evaluate(model, criterion, test_data)
-    plot_predictions(param_history,x_next_pred,x_next_true_test)
+    plot_predictions(param_history,x_next_pred,x_next_true_test_clean)
     print(f"Test loss: {test_loss:.5f}")
     print("Discovered Parameters:")
     for name, param in model.named_parameters():
         if "net" not in name:
             print(f"  {name} = {param.item():.4f}")
 
-
-    # 1. Convert tensors to NumPy arrays
-    y_true = x_next_true_test.detach().cpu().numpy().flatten()
-    y_pred = x_next_pred.detach().cpu().numpy().flatten()
-
-    # 2. Plot Overlapping Distributions
-    plt.figure(figsize=(8, 5), dpi=150)
-
-    plt.hist(
-        y_true,
-        bins=40,
-        density=True,
-        alpha=0.5,
-        color="blue",
-        label="True Clean Data",
-    )
-    plt.hist(
-        y_pred,
-        bins=40,
-        density=True,
-        alpha=0.5,
-        color="orange",
-        label="PINN Prediction",
-    )
-
-    plt.title(
-        "Attractor Density Distribution: True vs. PINN Predicted", fontsize=14
-    )
-    plt.xlabel("Value ($x_{n+1}$)", fontsize=12)
-    plt.ylabel("Density", fontsize=12)
-    plt.legend(loc="upper right")
-    plt.grid(True, linestyle="--", alpha=0.3)
-    plt.show()
     return model
 
 
