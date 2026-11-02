@@ -161,7 +161,7 @@ def train(map_func : str):
    
 
     criterion = LossCalc()
-    optimizer = optim.Adam(model.parameters(), lr=1e-1)
+    optimizer = optim.Adam(model.parameters(), lr=1e-2)
     
     epochs = 3000
     pbar = tqdm(range(epochs), desc=f"Training {map_func}PINN")
@@ -216,7 +216,7 @@ def train(map_func : str):
         
     if map_func == "logistic_map_with_noise":
         test_data = test_data_clean
-        x_next_true_test = x_next_true_test
+        x_next_true_test = x_next_true_test_clean
 
     test_loss, x_next_pred = evaluate(model, criterion, test_data)
     plot_predictions(param_history,x_next_pred,x_next_true_test_clean)
