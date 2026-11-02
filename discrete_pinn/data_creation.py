@@ -80,7 +80,7 @@ class MapFunction:
                 time_series_data.append(state_x)
 
             # --- 2. Apply the Paper's Noise Formula ---
-            eta = 0.30  # Signal Noise Ratio %
+            eta = 0.20 # Signal Noise Ratio %
             sigma_x = np.std(time_series_data)  # Standard deviation of the clean signal
             sigma_noise = eta * sigma_x  # Scaled noise standard deviation
 

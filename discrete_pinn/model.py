@@ -81,7 +81,8 @@ class LossCalc(nn.Module):
             
         # 1. Supervised Data Loss: Fit observed transitions
         data_loss = self.mse(x_next_pred, x_next_true)
-        
+        lambda1 = 1
+        lambda2 = 1
         # 2. Discrete Physics Residual: Algebraic recurrence relation
         # Physcis loss takes x_next_pred and x_current_pred, it should uses prediction data entirely
         if calc_physics:
@@ -89,7 +90,7 @@ class LossCalc(nn.Module):
             physics_residual = model.get_physics_residual(x_current, x_next_pred)
             physics_loss = torch.mean(physics_residual ** 2)
             
-            return data_loss + physics_loss
+            return lambda1*data_loss + lambda2*physics_loss
 
         
 

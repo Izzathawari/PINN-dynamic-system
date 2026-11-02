@@ -33,7 +33,7 @@ def plot_predictions(param_hist, pred_data,true_data, save_filename="output_dir/
 
     #--------------------------------#
 
-    plt.figure(figsize=(7, 4))
+    plt.figure(figsize=(6, 4))
     plt.title("PINN Predictions - Test Phase")
     plt.xlabel("Time Step")
     plt.ylabel(r"$State Variable$")
@@ -161,9 +161,9 @@ def train(map_func : str):
    
 
     criterion = LossCalc()
-    optimizer = optim.Adam(model.parameters(), lr=1e-2)
+    optimizer = optim.Adam(model.parameters(), lr=1e-1)
     
-    epochs = 1000
+    epochs = 3000
     pbar = tqdm(range(epochs), desc=f"Training {map_func}PINN")
 
     param_history = {"a": [], "b": []}
