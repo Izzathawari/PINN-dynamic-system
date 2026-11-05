@@ -80,9 +80,10 @@ class MapFunction:
                 time_series_data.append(state_x)
 
             # --- 2. Apply the Paper's Noise Formula ---
-            eta = 0.40 # Signal Noise Ratio %
+            eta = 0.05 # Signal Noise Ratio %
             sigma_x = np.std(time_series_data)  # Standard deviation of the clean signal
             sigma_noise = eta * sigma_x  # Scaled noise standard deviation
+            print(f"Percentage of Noise {eta*100}")
 
             # Generate white noise using the paper's formula
             white_noise = np.random.normal(loc=0.0, scale=sigma_noise, size=len(time_series_data))
