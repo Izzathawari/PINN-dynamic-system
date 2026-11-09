@@ -13,7 +13,7 @@ from data_setup import create_delay_embedding
 
 class MapFunction:
     def __init__(self):
-        self.alpha = None
+        self.alpha = 3.99
         self.trajectory = None
         self.a = None
         self.b = None
@@ -44,7 +44,7 @@ class MapFunction:
     
 
             state_x = 0.8
-            self.alpha = 3.99
+            self.alpha = self.alpha
             # Discard transient iterations
             for _ in range(transient_step):
                 state_x = self.logistic_map(state_x)
@@ -68,7 +68,7 @@ class MapFunction:
     
 
             state_x = 0.8
-            self.alpha = 3.99
+            self.alpha = self.alpha
             # Discard transient iterations
             for _ in range(transient_step):
                 state_x = self.logistic_map(state_x)
@@ -80,7 +80,7 @@ class MapFunction:
                 time_series_data.append(state_x)
 
             # --- 2. Apply the Paper's Noise Formula ---
-            eta = 0.05 # Signal Noise Ratio %
+            eta = 0.00 # Signal Noise Ratio %
             sigma_x = np.std(time_series_data)  # Standard deviation of the clean signal
             sigma_noise = eta * sigma_x  # Scaled noise standard deviation
             print(f"Percentage of Noise {eta*100}")
@@ -213,7 +213,12 @@ class MapFunction:
             fig.savefig(save_filename, bbox_inches="tight")
             plt.close(fig)
 
-    def make_data_splits(self,train_ratio=0.8):
+    def make_data_splits(
+        self,
+        train_ratio=0.8,
+        val_ratio=0.1,
+        map_function: str | None = None,
+    ):
 
         """Convert a trajectory into chronological train, 
         validation, and test pairs.
@@ -235,15 +240,15 @@ class MapFunction:
         if x_current.dim() == 1:
             x_current = x_current.unsqueeze(1)
             x_next = x_next.unsqueeze(1)
-            
-        n_samples = len(x_current)
-        train_end = int(train_ratio * n_samples)
 
+        n = len(x_current)
+        train_end = int(train_ratio * n)
+        val_end = int((train_ratio + val_ratio) * n)
 
         return (
-            (x_current[:train_end], x_next[:train_end]), # Train Length
-            (x_current[train_end:], x_next[train_end:]), #Test 
-           
+            (x_current[:train_end], x_next[:train_end]),
+            (x_current[train_end:val_end], x_next[train_end:val_end]),
+            (x_current[val_end:], x_next[val_end:]),
         )
 
     def convert_data2pd(self,output_dir="output_dir/"):
@@ -307,81 +312,12 @@ if __name__ == "__main__":
 
     map_data = MapFunction()
     logistic_map, _ = map_data.run_trajectory("logistic_map")
+    train_data, validation_data, test_data = map_data.make_data_splits(map_function=logistic_map)
+    print(f"Train Data Len {len(train_data[0])}")
+    print(f"Validation Data Len {len(validation_data[0])}")
+    print(f"Test Data Len {len(test_data[0])}")
 
     map_data2 = MapFunction()
     logistic_map_noisy, _ = map_data2.run_trajectory("logistic_map_with_noise")
 
-    plt.figure(figsize=(8, 6))
-    plt.plot(logistic_map[:-1],
-        logistic_map[1:],
-        ".",
-        color="tab:blue",
-        alpha=0.6,
-        label="Clean",)
     
-    plt.plot(
-        logistic_map_noisy[:-1],
-        logistic_map_noisy[1:],
-        ".",
-        color="tab:red",
-        alpha=0.6,
-        label="Noisy",)
-    plt.xlabel(r"$x_n$")
-    plt.ylabel(r"$x_{n+1}$")
-    plt.title("Logistic Map Phase Plot")
-    plt.grid(True, linestyle="--")
-    plt.legend()
-    plt.tight_layout()
-    
-    
-    plt.figure(figsize=(8, 5), dpi=150)
-    count, bins, ignored = plt.hist(logistic_map, bins=100, density=True, alpha=0.6, color="black", label="Clean")
-    count, bins, ignored = plt.hist(logistic_map_noisy, bins=100, density=True, alpha=0.6, color="blue", label="Noisy")
-
-    x_pdf = np.linspace(0.001, 0.999, 500)
-    logistic_pdf = 1.0 / (np.pi * np.sqrt(x_pdf * (1.0 - x_pdf)))
-
-    plt.plot(
-        x_pdf,
-        logistic_pdf,
-        "r-",
-        linewidth=2.5,
-        label="Theoretical Logistic PDF ($r=4$)"
-    )
-
-
-
-    extracted_noise = logistic_map_noisy - logistic_map
-    sigma_actual = np.std(extracted_noise)
-    mean_noise= np.mean(extracted_noise)
-    print(f"Mean : {mean_noise} , Std Dev: {sigma_actual}")
-    plt.figure(figsize=(9, 5), dpi=150)
-    count, bins, ignored = plt.hist(
-        extracted_noise,
-        bins=60,
-        density=True,
-        alpha=0.6,
-        color="black",
-        label="Empirical Added Noise",
-    )
-
-    # 3. Plot the Correct Theoretical Gaussian PDF
-    xmin, xmax = plt.xlim()
-    x = np.linspace(xmin, xmax, 100)
-    # Use mean = 0 and scale = sigma_actual (derived from your eta * sigma_x formula)
-    p = stats.norm.pdf(x, loc=0.0, scale=sigma_actual)
-
-    plt.plot(
-        x,
-        p,
-        "r-",
-        linewidth=2.5,
-        label=f"Theoretical $\mathcal{{N}}(0, \sigma^2)$ ($\sigma$={sigma_actual:.4f})",
-    )
-
-    plt.title("Verification of Additive White Gaussian Noise", fontsize=13)
-    plt.xlabel("Noise Magnitude", fontsize=12)
-    plt.ylabel("Density", fontsize=12)
-    plt.legend(loc="upper right")
-    plt.grid(True, linestyle="--", alpha=0.3)
-    plt.show()

@@ -20,6 +20,22 @@ def evaluate(model, criterion, data):
         loss = criterion(model, x_next_pred, x_next, x_current= x_current, calc_physics = False)
     return loss.item(), x_next_pred
 
+def plot_loss (history):
+    ep = history["epoch"]
+    fig, ax = plt.subplots(1, 2, figsize=(12, 4.5))
+
+    ax[0].plot(ep, history["train"], label="train (data loss)")
+    ax[0].plot(ep, history["val"], label="validation (data loss)")
+    ax[0].plot(ep, history["train_total"], ":", color="gray",label="train total (incl. physics)")
+
+    ax[0].set_xlabel("epoch")
+    ax[0].set_ylabel("loss")
+    ax[0].set_title("Train vs validation (what the model is trained on)")
+    ax[0].grid(alpha=0.3)
+    ax[0].legend(fontsize=8)
+    plt.show() 
+    plt.close()
+
 
 def plot_predictions(param_hist, pred_data,true_data, save_filename="output_dir/pinn_predictions.png"):
 
@@ -58,6 +74,15 @@ def plot_predictions(param_hist, pred_data,true_data, save_filename="output_dir/
     output_path = Path(save_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path, dpi=150)
+
+    #-----------------------------#
+    plt.figure(figsize=(6, 4))
+    plt.title("PINN Predictions - Test Phase")
+    plt.xlabel("Time Step")
+    plt.ylabel(r"$State Variable$")
+    plt.plot(true_data[:50], '.', linestyle ="--", color="black", label="True Data")
+    plt.plot(pred_data[:50], '.', linestyle ="--", color="tab:red",label="Pred Data")
+    plt.show()
 
     #--------------------------------#
     fig,ax = plt.subplots(2,1, figsize=(9, 6))
@@ -112,16 +137,18 @@ def train(map_func : str):
             #----------Noisy Data----------------
             map_data = MapFunction()
             noisy_trajectory, timestep = map_data.run_trajectory("logistic_map_with_noise")
-            train_data, test_data = map_data.make_data_splits()
+            train_data, validation_data, test_data = map_data.make_data_splits(map_function=map_func)
             x_curr_train, x_next_true_train = train_data
+            x_curr_validation, x_next_true_validation = validation_data
             x_curr_test, x_next_true_test = test_data
             print(f"\n{"-"*5} Noisy Data Logistic Map Prepared {"-"*5}")
 
             #----------Clean Data----------------
             map_data_true = MapFunction()
             true_trajectory, timestep = map_data_true.run_trajectory("logistic_map")
-            train_data_clean, test_data_clean = map_data_true.make_data_splits()
+            train_data_clean, validation_data_clean,test_data_clean = map_data_true.make_data_splits()
             x_curr_train_clean, x_next_true_train_clean = train_data_clean
+            x_curr_validation_clean, x_next_true_validation_clean = validation_data_clean
             x_curr_test_clean, x_next_true_test_clean = test_data_clean
             print(f"\n{"-"*5} Clean Data Logistic Map Prepared {"-"*5}")
 
@@ -161,17 +188,19 @@ def train(map_func : str):
    
 
     criterion = LossCalc()
-    optimizer = optim.Adam(model.parameters(), lr=1e-2)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
     
     epochs = 3000
     pbar = tqdm(range(epochs), desc=f"Training {map_func}PINN")
 
     param_history = {"a": [], "b": []}
-    
+    history = {"epoch": [], "train_total": [], "train": [], "val": [], "val_clean": []}
+
     for epoch in pbar:
 
         if map_func == "logistic_map_with_noise":
 
+            #============= TRAIN ================
             model.train()       
             # Forward pass: predict x_{n+1} from x_n, x_{n-1}
             x_next_pred = model(x_curr_train) 
@@ -205,7 +234,19 @@ def train(map_func : str):
                     param_history[name].append(param.item())
             
             postfix_dict = {"Loss": f"{total_loss.item():.5f}"}
-            
+
+            #================ VALIDATION ==================
+            if map_func == "logistic_map_with_noise":
+                train_loss, _ = evaluate(model, criterion, (x_curr_train, x_next_true_train))
+                val_loss, _ = evaluate(model,criterion,(x_curr_validation, x_next_true_validation))
+                postfix = {"train": f"{train_loss:.5f}", "val": f"{val_loss:.5f}"}
+
+                history["epoch"].append(epoch)
+                history["train_total"].append(total_loss.item())
+                history["train"].append(train_loss)
+                history["val"].append(val_loss)
+
+
             # Dynamically add any map parameters to the progress bar
             for name, param in model.named_parameters():
                 if "net" not in name:
@@ -213,13 +254,14 @@ def train(map_func : str):
                     
             pbar.set_postfix(postfix_dict)
 
-        
+    #=============== TEST ========================
     if map_func == "logistic_map_with_noise":
         test_data = test_data_clean
         x_next_true_test = x_next_true_test_clean
 
     test_loss, x_next_pred = evaluate(model, criterion, test_data)
     plot_predictions(param_history,x_next_pred,x_next_true_test_clean)
+    plot_loss(history)
     print(f"Test loss: {test_loss:.5f}")
     print("Discovered Parameters:")
     for name, param in model.named_parameters():
