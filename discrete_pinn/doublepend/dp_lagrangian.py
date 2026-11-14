@@ -33,7 +33,7 @@ class DoublePendulumLagrangian:
         self.L2 = L2
 
 
-    def potential (self):
+    def potential_energy (self):
         """
         Potential Energy Part of Langragrian Eq.
         """
@@ -54,7 +54,7 @@ class DoublePendulumLagrangian:
         return m1 * g * y1 + m2 * g * y2
 
 
-    def kinetic (self):
+    def kinetic_energy (self):
         """
         Kinetic Energy Part of Langragrian Eq.
         """
@@ -75,9 +75,9 @@ class DoublePendulumLagrangian:
         return K1 + K2
 
 
-    def total_energy (self):
+    def mechanical_energy (self):
 
-        return self.kinetic() + self.potential()
+        return self.kinetic_energy() + self.potential_energy()
 
     def langrange_eq (self, t1, t2, w1, w2):
 
@@ -117,10 +117,10 @@ class DoublePendulumLagrangian:
         y = numpy.array([t1, t2, w1, w2])
 
         #computing the RK4 constants
-        k1 = self.lagrange_rhs(*y)
-        k2 = self.lagrange_rhs(*(y + dt * k1 / 2))
-        k3 = self.lagrange_rhs(*(y + dt * k2 / 2))
-        k4 = self.lagrange_rhs(*(y + dt * k3))
+        k1 = self.langrange_eq(*y)
+        k2 = self.langrange_eq(*(y + dt * k1 / 2))
+        k3 = self.langrange_eq(*(y + dt * k2 / 2))
+        k4 = self.langrange_eq(*(y + dt * k3))
 
         #computing the RK4 right-hand side
         R = 1.0 / 6.0 * dt * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
