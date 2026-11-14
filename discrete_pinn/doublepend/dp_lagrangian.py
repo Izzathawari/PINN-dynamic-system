@@ -1,5 +1,6 @@
 import math
-import numpy
+import numpy as np
+import matplotlib.pyplot as plt
 
 class DoublePendulumLagrangian:
 
@@ -99,13 +100,19 @@ class DoublePendulumLagrangian:
         g1 = (f1 - a1 * f2) / (1 - a1 * a2)
         g2 = (f2 - a2 * f1) / (1 - a1 * a2)
 
-        return numpy.array([w1, w2, g1, g2])
+        return np.array([w1, w2, g1, g2])
 
 
     def rungge_kutta_step(self, dt):
         """
         Advances one time step using fourth order classical Runge-Kutta
-        method.
+        method. 
+
+        Argument:
+        dt = time step
+
+        Output:
+        A vetor of [theta 1, omega 1, theta 2, omega 2]
         """
         t1 = self.t1
         w1 = self.w1
@@ -114,7 +121,7 @@ class DoublePendulumLagrangian:
 
         #array with the generalized coordinates (angles +
         # angular velocities)
-        y = numpy.array([t1, t2, w1, w2])
+        y = np.array([t1, t2, w1, w2])
 
         #computing the RK4 constants
         k1 = self.langrange_eq(*y)
@@ -130,3 +137,44 @@ class DoublePendulumLagrangian:
         self.t2 += R[1]
         self.w1 += R[2]
         self.w2 += R[3]
+
+class SinglePendulum:
+    def __init__(self, m, L, init_theta):
+        self.m = m
+        self.L = L
+        self.init_theta = init_theta
+
+    def solution(self, time):
+        g = 9.8
+        return self.init_theta * np.cos(np.sqrt(g / self.L) * time)
+
+
+
+def main():
+    single = SinglePendulum(m=1, L=1.0, init_theta=0.2)  # ~23 degrees
+    time = np.linspace(0, 10, 500)
+
+    # 1. Calculate angle theta(t)
+    theta = single.solution(time)
+    x = single.L * np.sin(theta)
+    y = -single.L * np.cos(theta)
+
+    # 3. Plot the 2D trajectory
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.plot(x, y, color="tab:blue", lw=2.5, label="Mass trajectory")
+
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_xlim(-single.L * 1.1, single.L * 1.1)
+    ax.set_ylim(-single.L * 1.2, 0.2)
+
+    ax.set_title("Single Pendulum Mass Trajectory (x-y Plane)")
+    ax.set_xlabel("x position (m)")
+    ax.set_ylabel("y position (m)")
+    ax.legend(loc="upper right")
+    ax.grid(True, linestyle="--", alpha=0.4)
+
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
