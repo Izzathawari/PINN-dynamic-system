@@ -98,6 +98,11 @@ def diff():
 
 
 def main():
+    """
+    Functions:
+    Use rungge_kutta_step function DoublePendulumLagrangian to simulate the trajectory of double pendulum
+    
+    """
     t, x_data_1, x_data_2, y_data_1, y_data_2, w1_data, w2_data= [], [], [], [], [], [], []
     t1_data, t2_data, K_data, P_data, E_data  =  [], [], [], [], []
     # default simulation parameter values

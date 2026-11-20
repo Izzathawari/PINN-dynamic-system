@@ -151,29 +151,7 @@ class SinglePendulum:
 
 
 def main():
-    single = SinglePendulum(m=1, L=1.0, init_theta=0.2)  # ~23 degrees
-    time = np.linspace(0, 10, 500)
-
-    # 1. Calculate angle theta(t)
-    theta = single.solution(time)
-    x = single.L * np.sin(theta)
-    y = -single.L * np.cos(theta)
-
-    # 3. Plot the 2D trajectory
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.plot(x, y, color="tab:blue", lw=2.5, label="Mass trajectory")
-
-    ax.set_aspect("equal", adjustable="box")
-    ax.set_xlim(-single.L * 1.1, single.L * 1.1)
-    ax.set_ylim(-single.L * 1.2, 0.2)
-
-    ax.set_title("Single Pendulum Mass Trajectory (x-y Plane)")
-    ax.set_xlabel("x position (m)")
-    ax.set_ylabel("y position (m)")
-    ax.legend(loc="upper right")
-    ax.grid(True, linestyle="--", alpha=0.4)
-
-    plt.show()
+    pass
 
 
 if __name__ == "__main__":

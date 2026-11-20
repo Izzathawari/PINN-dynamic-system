@@ -10,6 +10,13 @@ class SchreiFilterMethod:
 
 
     def create_window (self):
+        """
+        Example:
+        l = k = 1
+        [[0 1 2]
+        [1 2 3]
+        [2 3 4]]
+        """
 
         windows = []
         n = len(self.x)
@@ -27,7 +34,20 @@ class SchreiFilterMethod:
         Arguments:
         Input : Time Series Data, x
         """
-        pass
+
+        sets = []
+
+        windows = self.create_window()
+
+        fix_window = windows[0]
+
+        for i in range (windows):
+            diff = fix_window - windows[i]
+
+            if diff < epsilon:
+                sets.append(windows[i])
+            
+        
 
 
         
