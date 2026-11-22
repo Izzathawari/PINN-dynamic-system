@@ -26,7 +26,9 @@ class PINN (nn.Module):
         super().__init__()
         
         self.net = nn.Sequential(
-            nn.Linear(n_input,n_hidden), nn.Tanh(),
+            nn.Linear(n_input,n_hidden), nn.SiLU(),
+            nn.Linear(n_hidden,n_hidden), nn.SiLU(),
+            nn.Linear(n_hidden,n_hidden), nn.SiLU(),
             nn.Linear(n_hidden, n_output))
 
         
@@ -40,26 +42,65 @@ class LossCalc(nn.Module):
         super().__init__()
         self.mse = nn.MSELoss()
 
-    def forward(self, model:PINN,
+    def forward(self, 
+                 t: torch.Tensor,
                  state_pred: torch.Tensor,
                  state_true: torch.Tensor,
-                 calc_physics=True):
+                 pend_param = None):
 
         """
         Use data loss and physics loss
+        
+        Parameters
+        -----------------------------
+        state_pred : 2D pytorch array
+            Referring to angle of bob 1, and bob 2. (theta_1 and theta_2)
+    
+
+        Returns
+        ----------------------------
+        total_loss 
+            Array of total loss of data and physics loss 
 
         """
-        dp_eq = DoublePendulumLagrangian()
-        #=================
-        # theta_1, theta_2 : 角度重り１と２
-        # w_1, w_2 : 角速度重り１と２
-        # alpha_1, alpha_2 : 各加速度重り１と２
-        
         data_loss = self.mse(state_pred, state_true)
-        
-        physics_loss = 
+
+        if pend_param is not None:
+            dp_eq = DoublePendulumLagrangian(*pend_param)
+            #=================
+            # theta_1, theta_2 : 角度重り１と２
+            # w_1, w_2 : 角速度重り１と２
+            # alpha_1, alpha_2 : 各加速度重り１と２
+
+            theta_1 = state_pred[:, 0:1]
+            theta_2 = state_pred[:, 1:2]
+
+            # 1st derivatives w.r.t. time t -> angular velocities (w_1, w_2)
+            w_1 = torch.autograd.grad(
+                theta_1, t, grad_outputs=torch.ones_like(theta_1), create_graph=True)[0]
+            w_2 = torch.autograd.grad(
+                theta_2, t, grad_outputs=torch.ones_like(theta_2), create_graph=True)[0]
+
+            # 2nd derivatives w.r.t. time t -> angular accelerations (alpha_1, alpha_2)
+            alpha_1 = torch.autograd.grad(
+                w_1, t, grad_outputs=torch.ones_like(w_1), create_graph=True)[0]
+            alpha_2 = torch.autograd.grad(
+                w_2, t, grad_outputs=torch.ones_like(w_2), create_graph=True)[0]
+
+            # Theoretical Euler-Lagrange accelerations from physics equations
+            g1_phys, g2_phys = dp_eq.accel_torch(theta_1, theta_2, w_1, w_2)
+            
+            physics_loss = self.mse(alpha_1, g1_phys) + self.mse(alpha_2, g2_phys)
+
+            total_loss = data_loss + physics_loss
+            
+
+            return total_loss
 
         
-
+        
         return data_loss
+
+
+             
 

@@ -1,6 +1,8 @@
 import math
+import torch
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
 
 class DoublePendulumLagrangian:
 
@@ -102,41 +104,60 @@ class DoublePendulumLagrangian:
 
         return np.array([w1, w2, g1, g2])
 
-
-    def rungge_kutta_step(self, dt):
+    def accel_torch(self, t1, t2, w1, w2):
         """
-        Advances one time step using fourth order classical Runge-Kutta
-        method. 
-
-        Argument:
-        dt = time step
-
-        Output:
-        A vetor of [theta 1, omega 1, theta 2, omega 2]
+        PyTorch-differentiable Euler-Lagrange accelerations (g1, g2) 
+        for PINN loss.
+        
+        Arguments
+        -------------
+        t1, t2, w1, w2 are tensors of shape (N, 1).
+            Angle 1, Angle 2, Angular Velocity 1, Angular Velocity 2
         """
-        t1 = self.t1
-        w1 = self.w1
-        t2 = self.t2
-        w2 = self.w2
+        m1, L1, m2, L2, g = self.m1, self.L1, self.m2, self.L2, self.g
 
-        #array with the generalized coordinates (angles +
-        # angular velocities)
-        y = np.array([t1, t2, w1, w2])
+        a1 = (L2 / L1) * (m2 / (m1 + m2)) * torch.cos(t1 - t2)
+        a2 = (L1 / L2) * torch.cos(t1 - t2)
 
-        #computing the RK4 constants
-        k1 = self.langrange_eq(*y)
-        k2 = self.langrange_eq(*(y + dt * k1 / 2))
-        k3 = self.langrange_eq(*(y + dt * k2 / 2))
-        k4 = self.langrange_eq(*(y + dt * k3))
+        f1 = -(L2 / L1) * (m2 / (m1 + m2)) * (w2**2) * torch.sin(t1 - t2) - (g / L1) * torch.sin(t1)
+        f2 = (L1 / L2) * (w1**2) * torch.sin(t1 - t2) - (g / L2) * torch.sin(t2)
 
-        #computing the RK4 right-hand side
-        R = 1.0 / 6.0 * dt * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        g1 = (f1 - a1 * f2) / (1 - a1 * a2)
+        g2 = (f2 - a2 * f1) / (1 - a1 * a2)
 
-        #finally updating the angles and angular velocities
-        self.t1 += R[0]
-        self.t2 += R[1]
-        self.w1 += R[2]
-        self.w2 += R[3]
+        return g1, g2
+
+
+    def _ode_rhs(self, t, y):
+        """Adapter matching scipy.integrate.solve_ivp signature fun(t, y)."""
+        return self.langrange_eq(*y)
+
+    def simulate(self, num_steps: int, dt: float, method: str = "RK45"):
+        """
+        Simulates the double pendulum using SciPy's Runge-Kutta solver.
+
+        Returns
+        -------
+        timestep : np.ndarray of shape (num_steps, 1)
+        angles   : np.ndarray of shape (num_steps, 2) -> [theta_1, theta_2] (unwrapped)
+        """
+        t_eval = np.arange(num_steps) * dt
+        t_span = (0.0, t_eval[-1])
+        y0 = [self.t1, self.t2, self.w1, self.w2]
+
+        sol = solve_ivp(
+            self._ode_rhs,
+            t_span=t_span,
+            y0=y0,
+            method=method,
+            t_eval=t_eval,
+            rtol=1e-10,
+            atol=1e-12,
+        )
+
+        timestep = sol.t.reshape(-1, 1)
+        angles = np.column_stack((sol.y[0], sol.y[1]))
+        return timestep, angles
 
 class SinglePendulum:
     def __init__(self, m, L, init_theta):
