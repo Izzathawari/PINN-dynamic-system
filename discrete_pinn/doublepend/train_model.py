@@ -1,12 +1,14 @@
 import math
+import os
 import torch
 import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from model import PINN, LossCalc
 
-def data_setup (num_steps, dt):
+def data_setup (num_steps, dt, csv_path= "dp_data.csv", force_recompute=False):
     """
 
     Arguments
@@ -41,16 +43,34 @@ def data_setup (num_steps, dt):
     t1, t2 = 2.62, 2.62 # 0.9 = 51 deg, 0.2 = 11 deg, 1.5 = 86 deg
     w1 = w2 = 0
     L1 = L2 = 1
+    pend_param  = (g, m1, m2, t1, t2, w1, w2, L1, L2)
 
-    # initialize the double pendulum
+    if not force_recompute and os.path.exists(csv_path):
+        df = pd.read_csv(csv_path)
+        same_len = len(df) == num_steps
+        same_dt = num_steps < 2 or np.isclose(df["t"].iloc[1] - df["t"].iloc[0], dt)
+        same_ic = np.isclose(df["theta1"].iloc[0], t1) and np.isclose(df["theta2"].iloc[0], t2)
+
+        if same_len and same_dt and same_ic:
+            timestep = df[["t"]].to_numpy(dtype=np.float64)              # shape: (N, 1)
+            angles = df[["theta1", "theta2"]].to_numpy(dtype=np.float64)  # shape: (N, 2)
+            print(f"Loaded cached RK45 data from '{csv_path}'")
+            return timestep, angles, pend_param
+
+    # Compute RK45 trajectory and save via Pandas
     from dp_lagrangian import DoublePendulumLagrangian
-    obj = DoublePendulumLagrangian(g, m1, m2, t1, t2, w1, w2, L1, L2)
+    obj = DoublePendulumLagrangian(*pend_param)
+    timestep, angles = obj.simulate(num_steps=num_steps, dt=dt)
 
-    timestep, angles = obj.simulate(num_steps=num_steps,dt=dt)
-        
+    df = pd.DataFrame({
+        "t": timestep.flatten(),
+        "theta1": angles[:, 0],
+        "theta2": angles[:, 1],
+    })
+    df.to_csv(csv_path, index=False, float_format="%.17g")
+    print(f"Computed and saved RK45 data to '{csv_path}'")
 
-    return timestep, angles, (g, m1, m2, t1, t2, w1, w2, L1, L2)
-
+    return timestep, angles, pend_param
 
 def data_split(timestep,data, train_len: int, val_len: int):
 
@@ -89,7 +109,7 @@ def data_split(timestep,data, train_len: int, val_len: int):
     )
 
 
-def evaluate(model, criterion, eval_data_pair, save_path="eval_plot.png", plot=False):
+def evaluate(model, criterion, eval_data_pair,  fulldata= False, timestep=False, save_path="eval_plot.png", plot=False):
 
     timestep, eval_data = eval_data_pair
     model.eval()
@@ -122,6 +142,7 @@ def evaluate(model, criterion, eval_data_pair, save_path="eval_plot.png", plot=F
         axes[1].set_ylabel("$\\theta_2$ [rad]")
         axes[1].legend(loc="upper right")
         axes[1].grid(True, alpha=0.3)
+        
 
         plt.tight_layout()
         plt.savefig(save_path, dpi=300)
@@ -150,7 +171,7 @@ def train_model ():
     
 
     timestep, data, pend_param = data_setup(num_steps=401, dt=0.005)
-    train_data, val_data, test_data = data_split(timestep, data, train_len=450, val_len=100 )
+    train_data, val_data, test_data = data_split(timestep, data, train_len=240, val_len=320 )
 
     t_train, y_train = train_data 
     t_train = t_train.clone().detach().requires_grad_(True)
@@ -159,7 +180,7 @@ def train_model ():
     model = PINN(n_input=1, n_hidden=30, n_output=2)
     criterion = LossCalc()
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
-    epochs = 10000
+    epochs = 5000
     history = {"epoch": [], "train": [], "val": []}
 
     print(f"---Training Start----")
@@ -186,9 +207,9 @@ def train_model ():
             history["epoch"].append(epoch)
 
 
-    train_loss = evaluate(model, criterion, train_data, save_path="train_plot.png", plot=True)
+    train_loss = evaluate(model, criterion, train_data,save_path="train_plot.png", plot=True)
     print(f"---------- \n TRAIN LOSS : {train_loss}")
-    test_loss = evaluate(model, criterion, test_data, save_path="test.png",plot=True)
+    test_loss = evaluate(model, criterion, test_data, data,timestep,save_path="test.png",plot=True)
     print(f"{"-" * 10} \n TEST LOSS : {test_loss}")
 
     
