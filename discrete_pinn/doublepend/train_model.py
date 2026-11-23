@@ -149,17 +149,17 @@ def get_prediction (model, timestep, data):
 def train_model ():
     
 
-    timestep, data, pend_param = data_setup(num_steps=201, dt=0.005)
-    train_data, val_data, test_data = data_split(timestep, data, train_len=120, val_len=160 )
+    timestep, data, pend_param = data_setup(num_steps=401, dt=0.005)
+    train_data, val_data, test_data = data_split(timestep, data, train_len=450, val_len=100 )
 
     t_train, y_train = train_data 
     t_train = t_train.clone().detach().requires_grad_(True)
 
 
-    model = PINN(n_input=1, n_hidden=24, n_output=2)
+    model = PINN(n_input=1, n_hidden=30, n_output=2)
     criterion = LossCalc()
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
-    epochs = 8000
+    epochs = 10000
     history = {"epoch": [], "train": [], "val": []}
 
     print(f"---Training Start----")
@@ -169,7 +169,7 @@ def train_model ():
         state_pred = model(t_train)
 
         # Compute combined loss
-        total_loss = criterion(t_train,state_pred, y_train, pend_param)
+        total_loss = criterion(t_train,state_pred, y_train, pend_param, ic_loss=True)
         
         # Backpropagation
         optimizer.zero_grad()
@@ -186,8 +186,12 @@ def train_model ():
             history["epoch"].append(epoch)
 
 
-    test_loss = evaluate(model, criterion, test_data, plot=True)
+    train_loss = evaluate(model, criterion, train_data, save_path="train_plot.png", plot=True)
+    print(f"---------- \n TRAIN LOSS : {train_loss}")
+    test_loss = evaluate(model, criterion, test_data, save_path="test.png",plot=True)
     print(f"{"-" * 10} \n TEST LOSS : {test_loss}")
+
+    
 
     
 
@@ -197,22 +201,12 @@ def train_model ():
 def wrap_to_pi(angles):
     """Wraps angles into [-pi, pi] for plotting against Steger et al. Fig. 1."""
     return (angles + np.pi) % (2 * np.pi) - np.pi
+
+
+
         
 if __name__  == "__main__":
 
 
-    timestep, angles, pend_param = data_setup(num_steps=201, dt=0.005)
-    wrapped = wrap_to_pi(angles)
-
-    plt.figure(figsize=(8, 4))
-    plt.plot(timestep, wrapped[:, 0], color="blue", label="$\\theta_1$")
-    plt.plot(timestep, wrapped[:, 1], color="blue", linestyle="--", label="$\\theta_2$")
-    plt.ylim(-3.5, 3.5)
-    plt.xlabel("Time $t$ [s]")
-    plt.ylabel("$\\theta_1, \\theta_2$ [rad]")
-    plt.title("Double Pendulum Reference Trajectory (RK45)")
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-    plt.savefig("rk45_reference.png", dpi=300)
-    plt.show()
+    pass
     

@@ -29,6 +29,8 @@ class PINN (nn.Module):
             nn.Linear(n_input,n_hidden), nn.SiLU(),
             nn.Linear(n_hidden,n_hidden), nn.SiLU(),
             nn.Linear(n_hidden,n_hidden), nn.SiLU(),
+            nn.Linear(n_hidden,n_hidden), nn.SiLU(),
+            nn.Linear(n_hidden,n_hidden), nn.SiLU(),
             nn.Linear(n_hidden, n_output))
 
         
@@ -46,7 +48,8 @@ class LossCalc(nn.Module):
                  t: torch.Tensor,
                  state_pred: torch.Tensor,
                  state_true: torch.Tensor,
-                 pend_param = None):
+                 pend_param = None,
+                 ic_loss = None):
 
         """
         Use data loss and physics loss
@@ -63,9 +66,19 @@ class LossCalc(nn.Module):
             Array of total loss of data and physics loss 
 
         """
-        data_loss = self.mse(state_pred, state_true)
+        total_loss = 0
 
+        #===============
+        # Data Loss
+        data_loss = self.mse(state_pred, state_true)
+        total_loss = data_loss
+
+
+        #==============
+        # Physics Loss
         if pend_param is not None:
+
+            g, m1, m2, t1_ic, t2_ic, w1_ic, w2_ic, L1, L2 = pend_param
             dp_eq = DoublePendulumLagrangian(*pend_param)
             #=================
             # theta_1, theta_2 : 角度重り１と２
@@ -91,6 +104,26 @@ class LossCalc(nn.Module):
             g1_phys, g2_phys = dp_eq.accel_torch(theta_1, theta_2, w_1, w_2)
             
             physics_loss = self.mse(alpha_1, g1_phys) + self.mse(alpha_2, g2_phys)
+
+            if ic_loss :
+
+                t1_ic = torch.tensor(t1_ic, dtype=state_pred.dtype, device=state_pred.device)
+                t2_ic = torch.tensor(t2_ic, dtype=state_pred.dtype, device=state_pred.device)
+                w1_ic = torch.tensor(w1_ic, dtype=state_pred.dtype, device=state_pred.device)
+                w2_ic = torch.tensor(w2_ic, dtype=state_pred.dtype, device=state_pred.device)
+
+                # Squared error on initial angles and initial angular velocities at index 0 (t_0)
+                ic_loss = (
+                    (theta_1[0, 0] - t1_ic) ** 2
+                    + (theta_2[0, 0] - t2_ic) ** 2
+                    + (w_1[0, 0] - w1_ic) ** 2
+                    + (w_2[0, 0] - w2_ic) ** 2
+                )
+                total_loss = total_loss +  ic_loss +  physics_loss
+
+            else:
+                total_loss = total_loss +  physics_loss
+                 
 
             total_loss = data_loss + physics_loss
             

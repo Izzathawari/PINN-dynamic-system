@@ -159,6 +159,8 @@ class DoublePendulumLagrangian:
         angles = np.column_stack((sol.y[0], sol.y[1]))
         return timestep, angles
 
+
+
 class SinglePendulum:
     def __init__(self, m, L, init_theta):
         self.m = m
