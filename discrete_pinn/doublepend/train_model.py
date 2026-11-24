@@ -181,7 +181,7 @@ def get_prediction (model, timestep, data):
 def train_model ():
     
 
-    timestep, data, pend_param = data_setup(num_steps=401, dt=0.005)
+    timestep, data, pend_param = data_setup(num_steps=1001, dt=0.005)
     train_data, val_data, test_data = data_split(timestep, data, train_len_percent=0.6, val_len_percent=0.2 )
 
     t_train, y_train = train_data 
@@ -190,8 +190,8 @@ def train_model ():
 
     model = PINN(n_input=1, n_hidden=30, n_output=2)
     criterion = LossCalc()
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
-    epochs = 10000
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    epochs = 15000
     history = {"epoch": [], "train": [], "val": []}
 
     print(f"---Training Start----")
@@ -201,7 +201,7 @@ def train_model ():
         state_pred = model(t_train)
 
         # Compute combined loss
-        total_loss = criterion(t_train,state_pred, y_train, pend_param, ic_loss=True)
+        total_loss = criterion(t_train,state_pred, y_train, pend_param, ic_loss = True)
         
         # Backpropagation
         optimizer.zero_grad()
@@ -230,7 +230,7 @@ def train_model ():
 
     
 
-    return model,history
+    return model,history, test_loss
 
 
 def wrap_to_pi(angles):
