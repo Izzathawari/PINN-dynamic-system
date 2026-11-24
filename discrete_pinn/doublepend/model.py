@@ -30,7 +30,6 @@ class PINN (nn.Module):
             nn.Linear(n_hidden,n_hidden), nn.SiLU(),
             nn.Linear(n_hidden,n_hidden), nn.SiLU(),
             nn.Linear(n_hidden,n_hidden), nn.SiLU(),
-            nn.Linear(n_hidden,n_hidden), nn.SiLU(),
             nn.Linear(n_hidden, n_output))
 
         
