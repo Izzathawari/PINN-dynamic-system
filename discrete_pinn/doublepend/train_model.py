@@ -181,7 +181,7 @@ def get_prediction (model, timestep, data):
 def train_model ():
     
 
-    timestep, data, pend_param = data_setup(num_steps=1001, dt=0.005)
+    timestep, data, pend_param = data_setup(num_steps=401, dt=0.005)
     train_data, val_data, test_data = data_split(timestep, data, train_len_percent=0.6, val_len_percent=0.2 )
 
     t_train, y_train = train_data 
