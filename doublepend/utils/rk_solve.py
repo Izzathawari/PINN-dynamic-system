@@ -82,13 +82,14 @@ class DoublePendulumLagrangian:
 
         return self.kinetic_energy() + self.potential_energy()
 
-    def langrange_eq (self, t1, t2, w1, w2):
+    def langrange_eq (self,t,y):
 
         m1 = self.m1
         L1 = self.L1
         m2 = self.m2
         L2 = self.L2
 
+        t1, t2, w1, w2 = y
         g = self.g
 
         a1 = (L2 / L1) * (m2 / (m1 + m2)) * np.cos(t1 - t2)
@@ -105,7 +106,7 @@ class DoublePendulumLagrangian:
         return np.array([w1, w2, g1, g2])
 
     
-    def exact_rk (self, t_eval, method = "RK45"):
+    def exact_rk (self, y0,t_eval, method = "RK45"):
         """
         Numerically solve the double pendulum ODE.
 
@@ -123,8 +124,10 @@ class DoublePendulumLagrangian:
             Reference solution of the system vector X = [theta_1, theta_2, omega_1, omega_2]
         """
 
+        t_eval = np.asarray(t_eval, dtype=np.float64)
+
         sol = solve_ivp(
-                    self._ode_rhs,
+                    self.langrange_eq,
                     t_span=[t_eval.min(), t_eval.max()],
                     y0=y0,
                     method=method,
@@ -132,3 +135,7 @@ class DoublePendulumLagrangian:
                     rtol=1e-10,
                     atol=1e-12,
                 )
+        
+        state_true = sol.y.T
+
+        return t_eval, state_true

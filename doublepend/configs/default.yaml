@@ -1,0 +1,57 @@
+#################################
+# System settings
+#################################
+
+x_domain: [0, 5]
+x0: 0
+y0: [1.6, 0, 0, 0]
+l1: 1
+l2: 1
+m1: 1
+m2: 1
+g: 9.81
+
+#################################
+# Data settings
+#################################
+
+n_col: 1024
+
+#################################
+# Preprocessing settings
+#################################
+
+norm_flag: True
+preprocessing_domain: [-5,5]
+
+#################################
+# PhysicsInformedNN settings
+#################################
+
+seed_pinn: 3
+
+
+n_input : 1
+n_output : 2
+n_hidden: 4
+n_neurons: 30
+activation: 'tanh'  # options : 'tanh', 'silu', 'swish', 'sigmoid'
+
+lambda_IC: 1
+
+#################################
+# Training settings
+#################################
+
+n_epochs: 25_000
+learning_rate: 0.01
+decay_rate: 0.9
+
+#################################
+# Callback and recording settings
+#################################
+
+n_pred_log: 10
+freq_log: 10
+freq_print: 500
+keys_print: ['loss_train', 'loss_IC', 'loss_Fx1', 'loss_Fx2', 'loss_Fx3', 'loss_Fx4']
