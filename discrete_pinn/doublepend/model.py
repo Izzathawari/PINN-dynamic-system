@@ -26,10 +26,8 @@ class PINN (nn.Module):
         super().__init__()
         
         self.net = nn.Sequential(
-            nn.Linear(n_input,n_hidden), nn.SiLU(),
-            nn.Linear(n_hidden,n_hidden), nn.SiLU(),
-            nn.Linear(n_hidden,n_hidden), nn.SiLU(),
-            nn.Linear(n_hidden,n_hidden), nn.SiLU(),
+            nn.Linear(n_input,n_hidden), nn.Tanh(),
+            nn.Linear(n_hidden,n_hidden), nn.Tanh(),
             nn.Linear(n_hidden, n_output))
 
         

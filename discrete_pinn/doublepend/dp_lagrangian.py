@@ -132,18 +132,19 @@ class DoublePendulumLagrangian:
         """Adapter matching scipy.integrate.solve_ivp signature fun(t, y)."""
         return self.langrange_eq(*y)
 
-    def simulate(self, num_steps: int, dt: float, method: str = "RK45"):
+    def simulate(self, y0, num_steps: int, dt: float, method: str = "RK45"):
         """
         Simulates the double pendulum using SciPy's Runge-Kutta solver.
 
         Returns
         -------
-        timestep : np.ndarray of shape (num_steps, 1)
-        angles   : np.ndarray of shape (num_steps, 2) -> [theta_1, theta_2] (unwrapped)
+        time_step
+        
+        state
+            Reference solution of the system vector X = [theta_1, theta_2, omega_1, omega_2]
         """
         t_eval = np.arange(num_steps) * dt
         t_span = (0.0, t_eval[-1])
-        y0 = [self.t1, self.t2, self.w1, self.w2]
 
         sol = solve_ivp(
             self._ode_rhs,
@@ -156,8 +157,9 @@ class DoublePendulumLagrangian:
         )
 
         timestep = sol.t.reshape(-1, 1)
-        angles = np.column_stack((sol.y[0], sol.y[1]))
-        return timestep, angles
+        state = sol.y
+
+        return timestep, state
 
 
 
